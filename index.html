@@ -235,6 +235,7 @@
             questionTextEl.textContent = currentQuestion.question;
             
             answerOptionsEl.innerHTML = "";
+            answerOptionsEl.style.pointerEvents = 'none'; // Bug fix
             const shuffledOptions = [...currentQuestion.options];
             shuffleArray(shuffledOptions);
 
@@ -245,6 +246,10 @@
                 button.onclick = () => selectAnswer(button, option);
                 answerOptionsEl.appendChild(button);
             });
+
+            setTimeout(() => {
+                answerOptionsEl.style.pointerEvents = 'auto'; // Bug fix
+            }, 100);
         }
         
         function selectAnswer(button, selectedOption) {
@@ -255,6 +260,8 @@
             const currentQuestion = activeQuestions[currentQuestionIndex];
             const isCorrect = selectedOption === currentQuestion.answer;
             
+            updateAndSaveProgress(isCorrect);
+
             if (isCorrect) {
                 score++;
                 button.classList.add('correct');
@@ -331,14 +338,18 @@
             } else {
                  endMessageEl.textContent = "Não desanime! As questões são complexas. A revisão constante levará à maestria.";
             }
-            saveProgress();
+            // Progress is now saved question by question, no need to call save here.
         }
         
-        function saveProgress() {
+        function updateAndSaveProgress(isCorrect) {
             if (!currentSubjectKey) return;
             const subjectProgress = progress[currentSubjectKey] || { correct: 0, total: 0 };
-            subjectProgress.correct += score;
-            subjectProgress.total += TOTAL_QUESTIONS_PER_QUIZ;
+            
+            subjectProgress.total += 1; // Always increment total questions attempted
+            if (isCorrect) {
+                subjectProgress.correct += 1;
+            }
+            
             progress[currentSubjectKey] = subjectProgress;
             localStorage.setItem('oabProgress', JSON.stringify(progress));
         }
@@ -347,6 +358,8 @@
             const savedProgress = localStorage.getItem('oabProgress');
             if (savedProgress) {
                 progress = JSON.parse(savedProgress);
+            } else {
+                progress = {};
             }
         }
         
@@ -372,7 +385,7 @@
                     const percentage = ((data.correct / data.total) * 100).toFixed(1);
                     statEl.innerHTML = `
                         <h3 class="text-xl font-bold text-gray-800">${subjectName}</h3>
-                        <p class="text-lg">Desempenho Geral: <span class="font-bold">${data.correct} / ${data.total}</span></p>
+                        <p class="text-lg">Desempenho Geral: <span class="font-bold">${data.correct} / ${data.total} questões</span></p>
                         <p class="text-2xl font-bold text-blue-700">${percentage}% de acerto</p>
                     `;
                 } else {
@@ -407,6 +420,442 @@
         // Initial Load
         loadProgress();
 
+    </script>
+</body>
+</html>
+```
+
+I'm getting the following error when I run the code:
+Uncaught TypeError: Cannot read properties of null (reading 'addEventListener')
+
+Can you help me fix this?Olá! Corrigi o erro para você.
+
+O problema estava acontecendo porque o código tentava adicionar um "ouvinte de evento" a um elemento que ainda não existia na página. Eu ajustei a ordem em que o código é executado para garantir que todos os elementos da página sejam carregados antes que o script tente interagir com eles.
+
+Abaixo está a versão corrigida do seu Canvas.
+
+
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prepara OAB - Quiz Multidisciplinar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+        }
+        .btn-lifeline:disabled {
+            background-color: #6b7280;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .answer-option {
+            border: 2px solid #e5e7eb;
+            transition: all 0.2s ease-in-out;
+        }
+        .answer-option:hover:not(.selected) {
+            border-color: #fbbf24;
+            background-color: #fefce8;
+        }
+        .answer-option.selected {
+            transform: translateX(5px);
+        }
+        .answer-option.correct {
+            background-color: #dcfce7 !important;
+            border-color: #22c55e !important;
+            color: #166534;
+        }
+        .answer-option.incorrect {
+            background-color: #fee2e2 !important;
+            border-color: #ef4444 !important;
+            color: #991b1b;
+        }
+        .subject-btn {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .subject-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div id="game-container" class="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-6 md:p-8">
+
+        <!-- Welcome Screen -->
+        <div id="welcome-screen" class="text-center">
+            <img src="https://placehold.co/150x150/1e3a8a/ffffff?text=OAB&font=montserrat" alt="Logo OAB" class="mx-auto rounded-full mb-6 border-4 border-blue-800">
+            <h1 class="text-4xl md:text-5xl font-bold text-blue-900">Prepara OAB</h1>
+            <p class="text-xl text-gray-600 mt-2 mb-8">Quiz Avançado para sua Aprovação</p>
+            
+            <div class="bg-gray-50 rounded-lg p-4 my-6 text-left text-sm text-gray-700">
+                <h3 class="font-bold text-lg mb-2 text-center text-blue-800">Instruções e Ajudas</h3>
+                <p class="mb-2">Escolha uma matéria e responda 15 questões de alto nível. Você tem 3 ajudas, que podem ser usadas <strong>apenas uma vez por quiz</strong>:</p>
+                <ul class="list-disc list-inside space-y-1">
+                    <li><strong class="text-gray-600">Pular (1):</strong> Pula a questão atual sem perder pontos.</li>
+                    <li><strong class="text-amber-600">Dica de Ouro:</strong> Fornece uma pista ou um raciocínio para resolver a questão.</li>
+                    <li><strong class="text-green-600">Na Letra da Lei:</strong> Indica o artigo, súmula ou base legal para encontrar a resposta.</li>
+                </ul>
+            </div>
+
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Escolha a matéria:</h3>
+            <div id="subject-selection" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button data-subject="consumer" class="subject-btn bg-blue-700 hover:bg-blue-800 text-white font-bold py-4 px-6 rounded-lg text-xl">Direito do Consumidor</button>
+                <button data-subject="penal" class="subject-btn bg-red-700 hover:bg-red-800 text-white font-bold py-4 px-6 rounded-lg text-xl">Direito Penal</button>
+                <button data-subject="constitutional" class="subject-btn bg-green-700 hover:bg-green-800 text-white font-bold py-4 px-6 rounded-lg text-xl">Direito Constitucional</button>
+            </div>
+            <button id="progress-btn" class="mt-6 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">Meu Progresso</button>
+        </div>
+
+        <!-- Main Game UI -->
+        <div id="main-game" class="hidden">
+            <!-- Header -->
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 border-b border-gray-200 pb-4">
+                <button id="back-to-menu-btn" class="text-blue-700 font-semibold mb-2 md:mb-0 hover:underline">← Voltar ao Menu</button>
+                <h2 id="quiz-title" class="text-xl md:text-2xl font-bold text-blue-900"></h2>
+                <div class="text-lg font-semibold bg-gray-100 text-gray-800 px-4 py-2 rounded-lg mt-2 md:mt-0">
+                    Questão: <span id="question-number">1</span>/15 | Acertos: <span id="score">0</span>
+                </div>
+            </div>
+
+            <!-- Lifelines -->
+            <div class="flex flex-wrap justify-center gap-2 md:gap-4 mb-6">
+                <button id="skip-btn" class="btn-lifeline bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg">Pular (1)</button>
+                <button id="tip-btn" class="btn-lifeline bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-4 rounded-lg">Dica de Ouro</button>
+                <button id="law-btn" class="btn-lifeline bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg">Na Letra da Lei</button>
+            </div>
+
+            <!-- Question Area -->
+            <div id="quiz-area" class="text-gray-800">
+                <div class="bg-gray-50 p-6 rounded-lg mb-6 min-h-[120px]">
+                    <p id="question-text" class="text-lg"></p>
+                </div>
+                <div id="answer-options" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+        </div>
+        
+        <!-- End Game Screen -->
+        <div id="end-screen" class="hidden text-center">
+             <h2 class="text-4xl font-bold text-blue-900 mb-4">Quiz Finalizado!</h2>
+             <p class="text-2xl mb-2">Seu desempenho:</p>
+             <p class="text-5xl font-bold mb-8"><span id="final-score"></span> / 15</p>
+             <p id="end-message" class="text-lg text-gray-700 mb-8"></p>
+             <button id="restart-btn" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-10 rounded-lg text-xl">
+                Voltar ao Menu
+             </button>
+        </div>
+
+        <!-- Progress Screen -->
+        <div id="progress-screen" class="hidden">
+            <h2 class="text-3xl font-bold text-blue-900 mb-6 text-center">Meu Progresso</h2>
+            <div id="progress-stats" class="space-y-4">
+                <!-- Stats will be injected here -->
+            </div>
+            <div class="text-center mt-8">
+                <button id="back-from-progress-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">Voltar ao Menu</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal for Helps -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-lg p-8 max-w-lg w-full text-center relative">
+             <button onclick="closeModal()" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+             <h3 id="modal-title" class="text-2xl font-bold mb-4 text-blue-900"></h3>
+             <p id="modal-content" class="text-gray-700 text-lg"></p>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const mainGame = document.getElementById('main-game');
+        const endScreen = document.getElementById('end-screen');
+        const progressScreen = document.getElementById('progress-screen');
+        
+        const subjectSelection = document.getElementById('subject-selection');
+        const quizTitleEl = document.getElementById('quiz-title');
+        const questionNumberEl = document.getElementById('question-number');
+        const scoreEl = document.getElementById('score');
+        const questionTextEl = document.getElementById('question-text');
+        const answerOptionsEl = document.getElementById('answer-options');
+        const finalScoreEl = document.getElementById('final-score');
+        const endMessageEl = document.getElementById('end-message');
+        
+        const skipBtn = document.getElementById('skip-btn');
+        const tipBtn = document.getElementById('tip-btn');
+        const lawBtn = document.getElementById('law-btn');
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalContent = document.getElementById('modal-content');
+        
+        const restartBtn = document.getElementById('restart-btn');
+        const progressBtn = document.getElementById('progress-btn');
+        const backFromProgressBtn = document.getElementById('back-from-progress-btn');
+        const backToMenuBtn = document.getElementById('back-to-menu-btn');
+        
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let lifelines = {};
+        let activeQuestions = [];
+        let acceptingAnswers = true;
+        const TOTAL_QUESTIONS_PER_QUIZ = 15;
+        let progress = {};
+        let currentSubjectKey = '';
+
+        const consumerQuestionBank = [ { question: "De acordo com a Teoria do Desvio Produtivo, popularizada no STJ, a indenização por danos morais é cabível quando:", options: ["O produto apresenta um vício de fabricação", "O consumidor perde tempo vital para solucionar um problema criado pelo fornecedor", "A publicidade é considerada abusiva", "Ocorre um acidente de consumo com dano físico"], answer: "O consumidor perde tempo vital para solucionar um problema criado pelo fornecedor", tip: "Esta teoria valoriza o tempo como um bem jurídico e pune a ineficiência do fornecedor em resolver problemas.", law: "Jurisprudência do STJ (Ex: REsp 1.737.412/SE)" }, { question: "Em relação à responsabilidade civil de um marketplace por vício em produto vendido por um lojista parceiro (seller), a jurisprudência majoritária do STJ entende que:", options: ["A responsabilidade é exclusiva do lojista vendedor", "O marketplace não tem responsabilidade", "Há responsabilidade solidária do marketplace, pois integra a cadeia de fornecimento", "O marketplace só responde se receber uma notificação formal"], answer: "Há responsabilidade solidária do marketplace, pois integra a cadeia de fornecimento", tip: "Pense na Teoria da Aparência. Para o consumidor, quem está 'por trás' da venda?", law: "Arts. 7º, parágrafo único, 14 e 25, § 1º do CDC." }, { question: "A publicidade oculta ('stealth marketing'), realizada por influenciadores digitais que não identificam o conteúdo como 'publi', caracteriza qual ilícito consumerista?", options: ["Publicidade comparativa ilícita", "Publicidade enganosa por omissão", "Publicidade abusiva", "Venda casada"], answer: "Publicidade enganosa por omissão", tip: "O CDC exige que a publicidade seja veiculada de tal forma que o consumidor a identifique como tal.", law: "Art. 36 e 37, § 1° do CDC" }, { question: "A responsabilidade do profissional liberal por fato do serviço é uma exceção à regra geral do CDC. Sua natureza é:", options: ["Objetiva", "Integral", "Subjetiva, apurada mediante a verificação de culpa", "Solidária com o estabelecimento"], answer: "Subjetiva, apurada mediante a verificação de culpa", tip: "Enquanto empresas respondem objetivamente, para o profissional liberal é necessário provar que ele agiu com culpa.", law: "Art. 14, § 4° do CDC" }, { question: "Nos contratos de adesão, a inserção de cláusula resolutória por inadimplência do consumidor é:", options: ["Sempre permitida", "Nula de pleno direito", "Permitida, desde que alternativa, cabendo a escolha ao consumidor", "Permitida apenas com assinatura à parte"], answer: "Permitida, desde que alternativa, cabendo a escolha ao consumidor", tip: "A cláusula não pode prever a resolução automática. Deve dar ao consumidor a opção de manter o contrato ou rescindi-lo.", law: "Art. 54, § 2º c/c Art. 53 do CDC" }, { question: "A Teoria Finalista Mitigada, adotada pelo STJ, permite que uma pessoa jurídica seja consumidora quando:", options: ["Adquire qualquer produto para sua atividade", "É uma empresa de grande porte", "Demonstra vulnerabilidade (técnica, jurídica, econômica) frente ao fornecedor", "É uma sociedade de economia mista"], answer: "Demonstra sua vulnerabilidade (técnica, jurídica, econômica) frente ao fornecedor", tip: "Esta teoria flexibiliza o conceito de 'destinatário final' para proteger pequenas empresas em situações de desigualdade.", law: "Jurisprudência do STJ (Ex: REsp 1.195.642/RJ)" }, { question: "Qual das seguintes situações NÃO é excludente da responsabilidade civil do fornecedor pelo fato do produto?", options: ["Culpa exclusiva do consumidor ou de terceiro", "Não colocação do produto no mercado", "Caso fortuito ou força maior", "Inexistência do defeito"], answer: "Caso fortuito ou força maior", tip: "O risco do empreendimento abrange o caso fortuito interno (eventos ligados à atividade da empresa).", law: "Art. 12, § 3º do CDC" }, { question: "Sobre a inversão do ônus da prova ('ope judicis'), é correto afirmar que:", options: ["É um direito automático do consumidor", "Deve ser decretada na sentença", "É uma regra de instrução, devendo ser decidida antes da fase probatória", "Aplica-se apenas nos Juizados Especiais"], answer: "É uma regra de instrução, devendo ser decidida antes da fase probatória", tip: "A decisão sobre a inversão do ônus da prova é uma regra de procedimento, e não de julgamento.", law: "Art. 6º, VIII do CDC e Jurisprudência do STJ" }, { question: "Segundo a Súmula 543 do STJ, em caso de culpa exclusiva do vendedor/construtor na resolução de contrato de imóvel, a restituição das parcelas pagas deve ser:", options: ["Integral e imediata", "Parcial, com retenção de 25%", "Integral, mas parcelada", "Parcial, conforme o contrato"], answer: "Integral e imediata", tip: "Se a culpa é da construtora, não há por que penalizar o consumidor com qualquer retenção.", law: "Súmula 543 do STJ" }, { question: "O envio de cartão de crédito não solicitado, mesmo bloqueado, corresponde a qual entendimento sumulado?", options: ["Súmula 297 do STJ", "Súmula 385 do STJ", "Súmula 532 do STJ", "Súmula 381 do STJ"], answer: "Súmula 532 do STJ", tip: "Este entendimento pacificou que a simples remessa do cartão sem pedido prévio já constitui um ato ilícito passível de indenização.", law: "Súmula 532 do STJ" } ];
+        const penalQuestionBank = [ { question: "No que tange à teoria do crime, a adoção da teoria finalista da ação por Hans Welzel implicou em que alteração dogmática fundamental?", options: ["A transferência do dolo e da culpa da culpabilidade para o tipo penal", "A criação do conceito de tipicidade conglobante por Zaffaroni", "A consideração da imputabilidade como pressuposto da pena e não do crime", "A extinção da análise do nexo causal nos crimes materiais"], answer: "A transferência do dolo e da culpa da culpabilidade para o tipo penal", tip: "O finalismo entende que toda ação humana é finalística, ou seja, dirigida a um fim. Assim, o dolo (fim) é parte da própria ação típica.", law: "Doutrina Penal (Teoria Finalista)" }, { question: "A 'cegueira deliberada' (willful blindness ou teoria do avestruz), segundo o STF e o STJ, é aplicável para a caracterização de qual elemento do tipo penal?", options: ["Culpa consciente", "Erro de tipo inevitável", "Dolo eventual", "Estado de necessidade"], answer: "Dolo eventual", tip: "A teoria se aplica ao agente que, tendo a possibilidade de conhecer a ilicitude de sua conduta, deliberadamente se coloca em situação de ignorância para se beneficiar.", law: "Jurisprudência do STF e STJ (Ex: AP 470)" }, { question: "A prática de um crime de roubo com emprego de uma arma de brinquedo, segundo a Súmula 174 do STJ (cancelada), era considerada majorante. Qual o entendimento atual e pacífico do STJ sobre o tema?", options: ["Continua sendo causa de aumento de pena", "Configura apenas constrangimento ilegal", "Não incide a majorante do emprego de arma, mas a violência ou grave ameaça caracteriza o roubo simples", "O crime passa a ser de furto qualificado"], answer: "Não incide a majorante do emprego de arma, mas a violência ou grave ameaça caracteriza o roubo simples", tip: "O fundamento é que a arma de brinquedo não possui potencialidade lesiva real, não aumentando o risco ao bem jurídico.", law: "Jurisprudência do STJ (pós-cancelamento da Súmula 174)" }, { question: "O princípio da insignificância (ou bagatela) é causa de exclusão de qual elemento do crime?", options: ["Culpabilidade", "Ilicitude", "Punibilidade", "Tipicidade material"], answer: "Tipicidade material", tip: "Para o STF, a conduta, embora formalmente típica (descrita na lei), é materialmente atípica por não gerar lesão relevante ao bem jurídico tutelado.", law: "Jurisprudência do STF (HC 84.412)" }, { question: "No concurso de pessoas, a teoria adotada como regra pelo Código Penal brasileiro para a comunicabilidade das circunstâncias e elementares do crime é a:", options: ["Monista ou unitária", "Dualista", "Pluralista", "Teoria do domínio do fato"], answer: "Monista ou unitária", tip: "O Código Penal, em regra, estabelece que todos que concorrem para o crime incidem nas penas a ele cominadas, na medida de sua culpabilidade.", law: "Art. 29 do Código Penal" }, { question: "No sistema trifásico de dosimetria da pena de Nelson Hungria, a análise das agravantes e atenuantes ocorre em que fase?", options: ["Primeira fase (pena-base)", "Segunda fase", "Terceira fase (causas de aumento e diminuição)", "Na execução da pena"], answer: "Segunda fase", tip: "A sequência é: 1º circunstâncias judiciais; 2º agravantes e atenuantes; 3º causas de aumento e diminuição.", law: "Art. 68 do Código Penal" }, { question: "O que é o 'arrependimento eficaz'?", options: ["O agente se arrepende após a consumação do crime", "O agente, após iniciar a execução, impede que o resultado se produza", "O agente desiste voluntariamente de prosseguir na execução", "O agente repara o dano antes do recebimento da denúncia"], answer: "O agente, após iniciar a execução, impede que o resultado se produza", tip: "É diferente da desistência voluntária, pois aqui o agente esgota os atos executórios, mas age para evitar o resultado. Ele responde pelos atos já praticados.", law: "Art. 15 do Código Penal" }, { question: "A prática de um crime de homicídio por um policial militar em serviço, contra um civil, será julgada por qual órgão?", options: ["Tribunal do Júri da Justiça Estadual", "Justiça Militar da União", "Justiça Militar Estadual", "Tribunal de Justiça, sem júri"], answer: "Tribunal do Júri da Justiça Estadual", tip: "A Lei 13.491/17 alterou a competência, mas o STF reafirmou que crimes dolosos contra a vida de civil praticados por militar são da competência do Júri.", law: "Art. 9º, §1º do CPM e Jurisprudência do STF" } ];
+        const constitutionalQuestionBank = [ { question: "No âmbito do Controle de Constitucionalidade, qual o principal traço distintivo entre o sistema difuso e o sistema concentrado?", options: ["O momento do controle (preventivo ou repressivo)", "O órgão que exerce o controle (qualquer juiz ou um tribunal específico)", "A norma objeto de controle (lei federal ou estadual)", "O tipo de inconstitucionalidade (formal ou material)"], answer: "O órgão que exerce o controle (qualquer juiz ou um tribunal específico)", tip: "Pense em 'difuso' como espalhado por todo o Judiciário e 'concentrado' em um único órgão de cúpula.", law: "Doutrina Constitucional (Controle de Constitucionalidade)" }, { question: "O que é o fenômeno da 'mutação constitucional'?", options: ["Uma alteração formal do texto da Constituição por meio de Emenda", "A revisão total da Constituição por uma nova Assembleia Constituinte", "Uma alteração no sentido e alcance de uma norma constitucional sem alteração de seu texto, por meio da interpretação judicial", "A declaração de inconstitucionalidade de uma Emenda Constitucional"], answer: "Uma alteração no sentido e alcance de uma norma constitucional sem alteração de seu texto, por meio da interpretação judicial", tip: "É o texto que permanece, mas a interpretação se adapta à nova realidade social. O STF é o principal ator desse fenômeno.", law: "Doutrina Constitucional (Hermenêutica)" }, { question: "Qual a teoria sobre a aplicabilidade dos direitos fundamentais que o STF adota em relação aos particulares (eficácia horizontal dos direitos fundamentais)?", options: ["Teoria da ineficácia total", "Teoria da eficácia indireta ou mediata", "Teoria da eficácia direta ou imediata", "Teoria da ponderação de interesses"], answer: "Teoria da eficácia direta ou imediata", tip: "O STF entende que os direitos fundamentais não se aplicam apenas na relação Estado-cidadão, mas também nas relações privadas, embora com ponderações.", law: "Jurisprudência do STF (Ex: RE 201.819)" }, { question: "A técnica de decisão em controle de constitucionalidade conhecida como 'Interpretação Conforme a Constituição' consiste em:", options: ["Declarar a norma inconstitucional com efeitos para o futuro", "Declarar a norma parcialmente inconstitucional, sem redução de texto", "Escolher, dentre as várias interpretações possíveis de uma norma, aquela que a compatibilize com a Constituição", "Anular completamente a lei por vício de forma"], answer: "Escolher, dentre as várias interpretações possíveis de uma norma, aquela que a compatibilize com a Constituição", tip: "É uma forma de preservar a validade da norma, 'salvando-a' ao lhe dar um sentido que esteja de acordo com a Carta Magna.", law: "Doutrina e Prática do STF" }, { question: "Sobre as Comissões Parlamentares de Inquérito (CPIs), é correto afirmar que elas possuem 'poderes de investigação próprios das autoridades judiciais'. Qual poder, no entanto, NÃO lhes é conferido?", options: ["A quebra de sigilo bancário, fiscal e de dados", "A convocação de ministros de Estado para depor", "A determinação de busca e apreensão domiciliar", "A oitiva de testemunhas sob compromisso de dizer a verdade"], answer: "A determinação de busca e apreensão domiciliar", tip: "Atos que implicam em reserva de jurisdição (exigem ordem judicial) não podem ser praticados por CPIs, como a interceptação telefônica e a busca domiciliar.", law: "Art. 58, § 3º da CF/88 e Jurisprudência do STF" }, { question: "O que é uma 'norma constitucional de eficácia contida'?", options: ["Aquela que necessita de lei para produzir seus efeitos", "Aquela que produz todos os seus efeitos desde o início, mas pode ter seu alcance restringido por lei posterior", "Aquela que não pode ser alterada por Emenda Constitucional", "Aquela que só se aplica aos entes da federação"], answer: "Aquela que produz todos os seus efeitos desde o início, mas pode ter seu alcance restringido por lei posterior", tip: "Ela tem aplicabilidade imediata e plena, mas o legislador ordinário pode 'conter' seus efeitos. Ex: direito de exercício profissional.", law: "Doutrina de José Afonso da Silva" }, { question: "No sistema brasileiro, a Arguição de Descumprimento de Preceito Fundamental (ADPF) possui caráter:", options: ["Principal, podendo ser ajuizada a qualquer tempo", "Subsidiário, cabível apenas quando não houver outro meio eficaz de sanar a lesividade", "Preventivo, apenas antes da publicação da lei", "Repressivo, apenas para leis federais"], answer: "Subsidiário, cabível apenas quando não houver outro meio eficaz de sanar a lesividade", tip: "A ADPF funciona como uma 'ação de fechamento' do sistema de controle concentrado, para situações não cobertas pela ADI ou ADC.", law: "Art. 4º, § 1º da Lei 9.882/99" }, { question: "Qual dos seguintes direitos NÃO é considerado uma cláusula pétrea explícita, conforme o Art. 60, § 4º da CF/88?", options: ["A forma federativa de Estado", "O voto direto, secreto, universal e periódico", "A separação dos Poderes", "A garantia do mandado de injunção"], answer: "A garantia do mandado de injunção", tip: "Embora seja um direito fundamental importante, o mandado de injunção não está listado no rol explícito do poder constituinte derivado reformador.", law: "Art. 60, § 4º da CF/88" } ];
+        
+        const questionBanks = {
+            consumer: consumerQuestionBank,
+            penal: penalQuestionBank,
+            constitutional: constitutionalQuestionBank
+        };
+        let currentSubjectBank = [];
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        
+        function selectSubject(subjectKey) {
+            welcomeScreen.classList.add('hidden');
+            mainGame.classList.remove('hidden');
+            
+            currentSubjectKey = subjectKey;
+
+            const titles = {
+                consumer: 'Direito do Consumidor',
+                penal: 'Direito Penal',
+                constitutional: 'Direito Constitucional'
+            };
+            quizTitleEl.textContent = titles[subjectKey];
+
+            currentSubjectBank = questionBanks[subjectKey];
+            startGame();
+        }
+
+        function startGame() {
+            endScreen.classList.add('hidden');
+            
+            score = 0;
+            currentQuestionIndex = 0;
+            lifelines = { skip: 1, tip: 1, law: 1 };
+            acceptingAnswers = true;
+            
+            updateLifelineButtons();
+            
+            shuffleArray(currentSubjectBank);
+            activeQuestions = currentSubjectBank.slice(0, TOTAL_QUESTIONS_PER_QUIZ);
+            
+            loadQuestion();
+        }
+        
+        function loadQuestion() {
+            if (currentQuestionIndex >= TOTAL_QUESTIONS_PER_QUIZ) {
+                endGame();
+                return;
+            }
+
+            acceptingAnswers = true;
+            const currentQuestion = activeQuestions[currentQuestionIndex];
+            
+            questionNumberEl.textContent = currentQuestionIndex + 1;
+            scoreEl.textContent = score;
+            questionTextEl.textContent = currentQuestion.question;
+            
+            answerOptionsEl.innerHTML = "";
+            answerOptionsEl.style.pointerEvents = 'none'; // Bug fix
+            const shuffledOptions = [...currentQuestion.options];
+            shuffleArray(shuffledOptions);
+
+            shuffledOptions.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.className = "answer-option text-left p-4 rounded-lg bg-gray-100 text-gray-700 font-semibold";
+                button.onclick = () => selectAnswer(button, option);
+                answerOptionsEl.appendChild(button);
+            });
+
+            setTimeout(() => {
+                answerOptionsEl.style.pointerEvents = 'auto'; // Bug fix
+            }, 100);
+        }
+        
+        function selectAnswer(button, selectedOption) {
+            if (!acceptingAnswers) return;
+            acceptingAnswers = false;
+
+            button.classList.add('selected');
+            const currentQuestion = activeQuestions[currentQuestionIndex];
+            const isCorrect = selectedOption === currentQuestion.answer;
+            
+            updateAndSaveProgress(isCorrect);
+
+            if (isCorrect) {
+                score++;
+                button.classList.add('correct');
+            } else {
+                button.classList.add('incorrect');
+                Array.from(answerOptionsEl.children).forEach(btn => {
+                    if (btn.textContent === currentQuestion.answer) {
+                        btn.classList.add('correct');
+                    }
+                });
+            }
+            
+            setTimeout(() => {
+                currentQuestionIndex++;
+                loadQuestion();
+            }, 2500);
+        }
+
+        function updateLifelineButtons() {
+            skipBtn.disabled = lifelines.skip === 0;
+            tipBtn.disabled = lifelines.tip === 0;
+            lawBtn.disabled = lifelines.law === 0;
+            skipBtn.textContent = `Pular (${lifelines.skip})`;
+            tipBtn.textContent = `Dica de Ouro${lifelines.tip === 0 ? ' (Usada)' : ''}`;
+            lawBtn.textContent = `Na Letra da Lei${lifelines.law === 0 ? ' (Usada)' : ''}`;
+        }
+
+        function useSkip() {
+            if (lifelines.skip > 0) {
+                lifelines.skip = 0;
+                updateLifelineButtons();
+                currentQuestionIndex++;
+                loadQuestion();
+            }
+        }
+
+        function useGoldenTip() {
+            if (lifelines.tip > 0) {
+                lifelines.tip = 0;
+                updateLifelineButtons();
+                const currentQuestion = activeQuestions[currentQuestionIndex];
+                modalTitle.textContent = "Dica de Ouro";
+                modalContent.textContent = currentQuestion.tip;
+                modal.classList.remove('hidden');
+            }
+        }
+
+        function useLawText() {
+            if (lifelines.law > 0) {
+                lifelines.law = 0;
+                updateLifelineButtons();
+                const currentQuestion = activeQuestions[currentQuestionIndex];
+                modalTitle.textContent = "Na Letra da Lei";
+                modalContent.textContent = `Consulte: ${currentQuestion.law}`;
+                modal.classList.remove('hidden');
+            }
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+        }
+        window.closeModal = closeModal;
+
+        function endGame() {
+            mainGame.classList.add('hidden');
+            endScreen.classList.remove('hidden');
+            
+            finalScoreEl.textContent = score;
+            const percentage = (score / TOTAL_QUESTIONS_PER_QUIZ) * 100;
+            if (percentage >= 70) {
+                endMessageEl.textContent = "Excelente desempenho! Você demonstrou profundo conhecimento da matéria. Parabéns!";
+            } else if (percentage >= 50) {
+                endMessageEl.textContent = "Bom resultado! Você está no caminho certo. Foque na revisão das jurisprudências e exceções.";
+            } else {
+                 endMessageEl.textContent = "Não desanime! As questões são complexas. A revisão constante levará à maestria.";
+            }
+        }
+        
+        function updateAndSaveProgress(isCorrect) {
+            if (!currentSubjectKey) return;
+            const subjectProgress = progress[currentSubjectKey] || { correct: 0, total: 0 };
+            
+            subjectProgress.total += 1; // Always increment total questions attempted
+            if (isCorrect) {
+                subjectProgress.correct += 1;
+            }
+            
+            progress[currentSubjectKey] = subjectProgress;
+            localStorage.setItem('oabProgress', JSON.stringify(progress));
+        }
+
+        function loadProgress() {
+            const savedProgress = localStorage.getItem('oabProgress');
+            if (savedProgress) {
+                progress = JSON.parse(savedProgress);
+            } else {
+                progress = {};
+            }
+        }
+        
+        function displayProgress() {
+            welcomeScreen.classList.add('hidden');
+            progressScreen.classList.remove('hidden');
+            const statsEl = document.getElementById('progress-stats');
+            statsEl.innerHTML = '';
+            
+            const subjects = {
+                consumer: 'Direito do Consumidor',
+                penal: 'Direito Penal',
+                constitutional: 'Direito Constitucional'
+            };
+
+            for (const key in subjects) {
+                const subjectName = subjects[key];
+                const data = progress[key];
+                const statEl = document.createElement('div');
+                statEl.className = 'bg-gray-100 p-4 rounded-lg';
+                
+                if (data && data.total > 0) {
+                    const percentage = ((data.correct / data.total) * 100).toFixed(1);
+                    statEl.innerHTML = `
+                        <h3 class="text-xl font-bold text-gray-800">${subjectName}</h3>
+                        <p class="text-lg">Desempenho Geral: <span class="font-bold">${data.correct} / ${data.total} questões</span></p>
+                        <p class="text-2xl font-bold text-blue-700">${percentage}% de acerto</p>
+                    `;
+                } else {
+                    statEl.innerHTML = `
+                        <h3 class="text-xl font-bold text-gray-800">${subjectName}</h3>
+                        <p class="text-lg text-gray-500">Nenhum quiz concluído nesta matéria.</p>
+                    `;
+                }
+                statsEl.appendChild(statEl);
+            }
+        }
+        
+        function showWelcomeScreen() {
+            welcomeScreen.classList.remove('hidden');
+            mainGame.classList.add('hidden');
+            endScreen.classList.add('hidden');
+            progressScreen.classList.add('hidden');
+        }
+
+        subjectSelection.addEventListener('click', (e) => {
+            if (e.target.matches('.subject-btn')) {
+                selectSubject(e.target.dataset.subject);
+            }
+        });
+        
+        progressBtn.addEventListener('click', displayProgress);
+        backFromProgressBtn.addEventListener('click', showWelcomeScreen);
+        backToMenuBtn.addEventListener('click', showWelcomeScreen);
+        restartBtn.addEventListener('click', showWelcomeScreen);
+
+        loadProgress();
+    });
     </script>
 </body>
 </html>
