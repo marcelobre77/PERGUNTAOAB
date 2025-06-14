@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prepara OAB - Quiz de Direito do Consumidor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e3a8a, #2563eb, #3b82f6);
+        }
+        .btn-lifeline:disabled {
+            background-color: #6b7280;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .answer-option {
+            border: 2px solid #e5e7eb;
+            transition: all 0.2s ease-in-out;
+        }
+        .answer-option:hover:not(.selected) {
+            border-color: #fbbf24;
+            background-color: #fefce8;
+        }
+        .answer-option.selected {
+            transform: translateX(5px);
+        }
+        .answer-option.correct {
+            background-color: #dcfce7 !important;
+            border-color: #22c55e !important;
+            color: #166534;
+        }
+        .answer-option.incorrect {
+            background-color: #fee2e2 !important;
+            border-color: #ef4444 !important;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div id="game-container" class="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-6 md:p-8">
+
+        <!-- Welcome Screen -->
+        <div id="welcome-screen" class="text-center">
+            <img src="https://placehold.co/150x150/1e3a8a/ffffff?text=OAB&font=montserrat" alt="Logo OAB" class="mx-auto rounded-full mb-6 border-4 border-blue-800">
+            <h1 class="text-4xl md:text-5xl font-bold text-blue-900">Prepara OAB</h1>
+            <p class="text-xl text-gray-600 mt-2 mb-8">Quiz Avançado: Direito do Consumidor</p>
+            <button id="start-btn" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-10 rounded-lg text-xl transition-transform transform hover:scale-105">
+                Começar
+            </button>
+        </div>
+
+        <!-- Main Game UI -->
+        <div id="main-game" class="hidden">
+            <!-- Header -->
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 border-b border-gray-200 pb-4">
+                <h2 class="text-xl md:text-2xl font-bold text-blue-900">Direito do Consumidor</h2>
+                <div class="text-lg font-semibold bg-gray-100 text-gray-800 px-4 py-2 rounded-lg mt-2 md:mt-0">
+                    Questão: <span id="question-number">1</span>/15 | Acertos: <span id="score">0</span>
+                </div>
+            </div>
+
+            <!-- Lifelines -->
+            <div class="flex flex-wrap justify-center gap-2 md:gap-4 mb-6">
+                <button id="skip-btn" class="btn-lifeline bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg">Pular (1)</button>
+                <button id="tip-btn" class="btn-lifeline bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-4 rounded-lg">Dica de Ouro</button>
+                <button id="law-btn" class="btn-lifeline bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg">Na Letra da Lei</button>
+            </div>
+
+            <!-- Question Area -->
+            <div id="quiz-area" class="text-gray-800">
+                <div class="bg-gray-50 p-6 rounded-lg mb-6 min-h-[120px]">
+                    <p id="question-text" class="text-lg"></p>
+                </div>
+                <div id="answer-options" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Options will be injected by JS -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- End Game Screen -->
+        <div id="end-screen" class="hidden text-center">
+             <h2 class="text-4xl font-bold text-blue-900 mb-4">Quiz Finalizado!</h2>
+             <p class="text-2xl mb-2">Seu desempenho:</p>
+             <p class="text-5xl font-bold mb-8"><span id="final-score"></span> / 15</p>
+             <p id="end-message" class="text-lg text-gray-700 mb-8"></p>
+             <button id="restart-btn" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-10 rounded-lg text-xl">
+                Novo Quiz
+             </button>
+        </div>
+
+    </div>
+
+    <!-- Modal for Helps -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-lg p-8 max-w-lg w-full text-center relative">
+             <button onclick="closeModal()" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+             <h3 id="modal-title" class="text-2xl font-bold mb-4 text-blue-900"></h3>
+             <p id="modal-content" class="text-gray-700 text-lg"></p>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const mainGame = document.getElementById('main-game');
+        const startBtn = document.getElementById('start-btn');
+        const questionNumberEl = document.getElementById('question-number');
+        const scoreEl = document.getElementById('score');
+        const questionTextEl = document.getElementById('question-text');
+        const answerOptionsEl = document.getElementById('answer-options');
+        const endScreen = document.getElementById('end-screen');
+        const finalScoreEl = document.getElementById('final-score');
+        const endMessageEl = document.getElementById('end-message');
+        const restartBtn = document.getElementById('restart-btn');
+        const skipBtn = document.getElementById('skip-btn');
+        const tipBtn = document.getElementById('tip-btn');
+        const lawBtn = document.getElementById('law-btn');
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalContent = document.getElementById('modal-content');
+
+        // Game State
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let lifelines = { skip: 1 };
+        let activeQuestions = [];
+        let acceptingAnswers = true;
+        const TOTAL_QUESTIONS_PER_QUIZ = 15;
+        
+        // BANCO DE QUESTÕES COMPLETO E DE NÍVEL ACADÊMICO
+        const questionBank = [
+            { question: "De acordo com a Teoria do Desvio Produtivo, popularizada no STJ, a indenização por danos morais é cabível quando:", options: ["O produto apresenta um vício de fabricação", "O consumidor perde tempo vital para solucionar um problema criado pelo fornecedor", "A publicidade é considerada abusiva", "Ocorre um acidente de consumo com dano físico"], answer: "O consumidor perde tempo vital para solucionar um problema criado pelo fornecedor", tip: "Esta teoria valoriza o tempo como um bem jurídico e pune a ineficiência do fornecedor em resolver problemas.", law: "Jurisprudência do STJ (Ex: REsp 1.737.412/SE)" },
+            { question: "Em relação à responsabilidade civil de um marketplace (como Amazon ou Mercado Livre) por um vício em produto vendido por um lojista parceiro (seller), a jurisprudência majoritária do STJ entende que:", options: ["A responsabilidade é exclusiva do lojista vendedor", "O marketplace não tem responsabilidade, pois é mero intermediário", "Há responsabilidade solidária do marketplace, pois integra a cadeia de fornecimento e transmite confiança", "O marketplace só responde se receber uma notificação formal do consumidor e não agir"], answer: "Há responsabilidade solidária do marketplace, pois integra a cadeia de fornecimento e transmite confiança", tip: "Pense na Teoria da Aparência. Para o consumidor, quem está 'por trás' da venda?", law: "Arts. 7º, parágrafo único, 14 e 25, § 1º do CDC." },
+            { question: "A publicidade oculta ou por dissimulação ('stealth marketing'), como a realizada por influenciadores digitais que não identificam o conteúdo como 'publi', caracteriza qual ilícito consumerista?", options: ["Publicidade comparativa ilícita", "Publicidade enganosa por omissão", "Publicidade abusiva por incitação à violência", "Prática de venda casada"], answer: "Publicidade enganosa por omissão", tip: "O CDC exige que a publicidade seja veiculada de tal forma que o consumidor, fácil e imediatamente, a identifique como tal.", law: "Art. 36 e 37, § 1° do CDC" },
+            { question: "A responsabilidade do profissional liberal (médico, advogado) por fato do serviço é uma exceção à regra geral do CDC. Sua natureza é:", options: ["Objetiva, baseada no risco do empreendimento", "Integral, não admitindo excludentes", "Subjetiva, apurada mediante a verificação de culpa (negligência, imprudência ou imperícia)", "Solidária, sempre respondendo junto com o estabelecimento onde atua"], answer: "Subjetiva, apurada mediante a verificação de culpa (negligência, imprudência ou imperícia)", tip: "Enquanto empresas respondem objetivamente, para o profissional liberal é necessário provar que ele agiu com culpa.", law: "Art. 14, § 4° do CDC" },
+            { question: "Nos contratos de adesão, a inserção de cláusula resolutória (que permite a extinção do contrato por inadimplência do consumidor) é:", options: ["Sempre permitida e válida", "Nula de pleno direito, por ser abusiva", "Permitida, desde que alternativa, cabendo a escolha ao consumidor", "Permitida apenas se o consumidor assinar um termo à parte"], answer: "Permitida, desde que alternativa, cabendo a escolha ao consumidor", tip: "A cláusula não pode prever a resolução automática. Deve dar ao consumidor a opção de manter o contrato ou rescindi-lo.", law: "Art. 54, § 2º c/c Art. 53 do CDC" },
+            { question: "A Teoria Finalista Mitigada (ou Aprofundada), adotada pelo STJ, permite que uma pessoa jurídica seja considerada consumidora quando:", options: ["Adquire qualquer produto para sua atividade comercial", "É uma empresa de grande porte com filial no exterior", "Demonstra vulnerabilidade (técnica, jurídica, informacional ou econômica) frente ao fornecedor, mesmo que não seja a destinatária final fática do bem", "É uma sociedade de economia mista"], answer: "Demonstra sua vulnerabilidade (técnica, jurídica, informacional ou econômica) frente ao fornecedor, mesmo que não seja a destinatária final fática do bem", tip: "Esta teoria flexibiliza o conceito de 'destinatário final' para proteger pequenas e médias empresas em situações de desigualdade.", law: "Jurisprudência do STJ (Ex: REsp 1.195.642/RJ)" },
+            { question: "Qual das seguintes situações NÃO é considerada excludente da responsabilidade civil do fornecedor pelo fato do produto?", options: ["A culpa exclusiva do consumidor ou de terceiro", "A não colocação do produto no mercado", "O caso fortuito ou força maior", "O defeito inexistir após análise técnica"], answer: "O caso fortuito ou força maior", tip: "O risco do empreendimento, base da responsabilidade objetiva no CDC, abrange o caso fortuito interno (eventos ligados à atividade da empresa).", law: "Art. 12, § 3º do CDC" },
+            { question: "Sobre a inversão do ônus da prova ('ope judicis'), é correto afirmar que:", options: ["É um direito automático do consumidor, bastando o ajuizamento da ação", "Deve ser decretada pelo juiz no momento da sentença, surpreendendo o fornecedor", "É uma regra de instrução, devendo o juiz decidir sobre sua aplicação antes da fase probatória, para não cercear a defesa", "Só pode ser aplicada em ações que tramitam nos Juizados Especiais Cíveis"], answer: "É uma regra de instrução, devendo o juiz decidir sobre sua aplicação antes da fase probatória, para não cercear a defesa", tip: "A decisão sobre a inversão do ônus da prova é uma regra de procedimento, e não de julgamento.", law: "Art. 6º, VIII do CDC e Jurisprudência do STJ (Tema 1079)" },
+            { question: "A Súmula 543 do STJ trata da resolução de contrato de promessa de compra e venda de imóvel. Em caso de culpa exclusiva do promitente vendedor/construtor, a restituição das parcelas pagas deve ser:", options: ["Integral e imediata", "Parcial, com retenção de 25% para despesas", "Integral, mas de forma parcelada", "Parcial, conforme previsto em contrato"], answer: "Integral e imediata", tip: "Se a culpa é da construtora, não há por que penalizar o consumidor com qualquer retenção.", law: "Súmula 543 do STJ" },
+            { question: "O que é o 'vício de quantidade' de um produto?", options: ["Quando o produto tem um defeito de fabricação", "Quando o conteúdo líquido é inferior às indicações constantes do recipiente ou da embalagem", "Quando o produto causa um dano ao consumidor", "Quando o preço na gôndola é diferente do preço no caixa"], answer: "Quando o conteúdo líquido é inferior às indicações constantes do recipiente ou da embalagem", tip: "O foco aqui é a divergência entre o que é informado e o que é efetivamente entregue em termos de peso ou medida.", law: "Art. 19 do CDC" },
+            { question: "A garantia contratual, oferecida pelo fabricante ou fornecedor:", options: ["Substitui a garantia legal, se for mais benéfica", "É complementar à garantia legal, e seu prazo é somado ao prazo desta", "Anula a garantia legal", "Só é válida para produtos importados"], answer: "É complementar à garantia legal, e seu prazo é somado ao prazo desta", tip: "Primeiro, esgota-se o prazo da garantia legal (90 dias para duráveis). Depois, inicia-se o prazo da garantia contratual.", law: "Art. 50 do CDC" },
+            { question: "A cobrança de 'comissão de permanência' em contratos bancários, segundo a jurisprudência do STJ:", options: ["É sempre permitida e pode ser cumulada com juros e multa", "É vedada em qualquer hipótese", "É permitida, desde que não ultrapasse a soma dos encargos remuneratórios e moratórios previstos e não seja cumulada com eles", "É permitida apenas em contratos de leasing"], answer: "É permitida, desde que não ultrapasse a soma dos encargos remuneratórios e moratórios previstos e não seja cumulada com eles", tip: "O STJ buscou evitar o 'bis in idem', permitindo a cobrança de um encargo único que já engloba juros e multa.", law: "Súmulas 30, 294 e 472 do STJ" },
+            { question: "No caso de fornecimento de serviço defeituoso, o consumidor pode exigir a reexecução dos serviços:", options: ["Apenas se o fornecedor concordar", "Por terceiros devidamente capacitados, por conta e risco do fornecedor", "A qualquer tempo, mesmo após anos", "Apenas se pagar uma taxa adicional"], answer: "Por terceiros devidamente capacitados, por conta e risco do fornecedor", tip: "É uma das três alternativas à disposição do consumidor, que pode escolher a que melhor lhe convier.", law: "Art. 20, I do CDC" },
+            { question: "A Teoria da Base Objetiva do Negócio Jurídico, aplicável ao CDC, permite a revisão contratual por onerosidade excessiva quando:", options: ["O consumidor simplesmente se arrepende do negócio", "Fatos supervenientes e imprevisíveis tornam a prestação de uma das partes excessivamente onerosa", "Ocorre a desvalorização normal da moeda", "O fornecedor aumenta o preço conforme previsto no contrato"], answer: "Fatos supervenientes e imprevisíveis tornam a prestação de uma das partes excessivamente onerosa", tip: "Diferente do Código Civil, o CDC adota uma teoria que facilita a revisão de contratos de longa duração (trato sucessivo).", law: "Art. 6º, V do CDC" },
+            { question: "O que é o 'recall' ou 'chamamento' de consumidores?", options: ["Uma campanha de marketing para novos produtos", "O dever do fornecedor de informar e reparar produtos que apresentam riscos após sua introdução no mercado", "A devolução de produtos por arrependimento", "Um tipo de protesto de consumidores"], answer: "O dever do fornecedor de informar e reparar produtos que apresentam riscos após sua introdução no mercado", tip: "É uma medida de proteção à saúde e segurança que visa sanar defeitos em produtos já vendidos.", law: "Art. 10, § 1º do CDC" },
+            { question: "No que consiste a 'Teoria da Qualidade', um dos pilares do CDC?", options: ["O produto deve ter a melhor matéria-prima possível", "O fornecedor responde por vícios de qualidade ou quantidade que tornem os produtos impróprios ou inadequados ao consumo", "A qualidade é subjetiva e depende do gosto do consumidor", "Apenas produtos de luxo precisam ter qualidade garantida"], answer: "O fornecedor responde por vícios de qualidade ou quantidade que tornem os produtos impróprios ou inadequados ao consumo", tip: "Essa teoria abrange tanto a adequação do produto (vício) quanto sua segurança (fato).", law: "Arts. 12, 14, 18 e 20 do CDC" },
+            { question: "A Lei do Superendividamento (Lei 14.181/21) introduziu no CDC o conceito de 'mínimo existencial'. Isso significa:", options: ["Um valor mínimo para que o consumidor possa processar um fornecedor", "Uma garantia de que parte da renda do consumidor superendividado não será usada para pagar dívidas, preservando sua dignidade", "O valor mínimo de compra para obter frete grátis", "O capital social mínimo para uma empresa ser considerada fornecedora"], answer: "Uma garantia de que parte da renda do consumidor superendividado não será usada para pagar dívidas, preservando sua dignidade", tip: "É um mecanismo de proteção social para evitar que o pagamento de dívidas consuma toda a renda do devedor.", law: "Art. 6º, XI e Art. 104-A do CDC" },
+            { question: "O envio de um cartão de crédito não solicitado pelo consumidor, mesmo que bloqueado, configura prática abusiva e ato ilícito. Esta afirmação corresponde a qual entendimento sumulado?", options: ["Súmula 297 do STJ", "Súmula 385 do STJ", "Súmula 532 do STJ", "Súmula 381 do STJ"], answer: "Súmula 532 do STJ", tip: "Este entendimento pacificou que a simples remessa do cartão sem pedido prévio já constitui um ato passível de indenização.", law: "Súmula 532 do STJ" },
+            { question: "O que é o 'dano moral coletivo' em matéria de consumo?", options: ["Um dano sofrido por um grupo de amigos", "Uma lesão intolerável a valores e interesses fundamentais da sociedade como um todo", "A soma de vários danos morais individuais", "Não é reconhecido pela jurisprudência brasileira"], answer: "Uma lesão intolerável a valores e interesses fundamentais da sociedade como um todo", tip: "Atinge um direito difuso, pertencente a uma coletividade indeterminada, como uma publicidade abusiva em rede nacional.", law: "Art. 6º, VI do CDC e construção jurisprudencial" },
+            { question: "A aplicabilidade da Teoria do Adimplemento Substancial nos contratos de consumo, para evitar a resolução do contrato, é:", options: ["Amplamente aceita pelo STJ", "Expressamente prevista no CDC", "Rejeitada pela jurisprudência majoritária do STJ em contratos regidos pelo CDC", "Aplicável apenas a contratos de alienação fiduciária"], answer: "Rejeitada pela jurisprudência majoritária do STJ em contratos regidos pelo CDC", tip: "O STJ entende que a aplicação dessa teoria do Código Civil poderia enfraquecer a proteção ao consumidor garantida pelo CDC.", law: "Jurisprudência do STJ (Ex: REsp 1.622.555)" },
+            { question: "Em um contrato de plano de saúde, a cláusula que limita o tempo de internação hospitalar do consumidor é considerada:", options: ["Válida, se expressa no contrato", "Abusiva e, portanto, nula de pleno direito", "Válida, se o consumidor for idoso", "Legal, pois ajuda a reduzir os custos do plano"], answer: "Abusiva e, portanto, nula de pleno direito", tip: "A saúde é um bem maior e limitar a internação com base em cláusula contratual fere a própria finalidade do serviço.", law: "Art. 51, IV e § 1º, II do CDC e Súmula 302 do STJ" },
+            { question: "O que significa o 'diálogo das fontes' no Direito do Consumidor?", options: ["Uma conversa entre consumidor e fornecedor", "A aplicação coordenada e simultânea do Código de Defesa do Consumidor e de outras leis (como o Código Civil), buscando a solução mais favorável ao consumidor", "Um debate entre os ministros do STF", "A tradução de leis estrangeiras sobre consumo"], answer: "A aplicação coordenada e simultânea do Código de Defesa do Consumidor e de outras leis (como o Código Civil), buscando a solução mais favorável ao consumidor", tip: "Proposta por Erik Jayme, essa teoria busca a harmonia e coerência do sistema jurídico, sempre em prol da parte vulnerável.", law: "Doutrina e Art. 7º do CDC" },
+            { question: "Uma cláusula de eleição de foro em um contrato de adesão, que dificulta a defesa do consumidor, é:", options: ["Sempre válida, pois as partes escolheram livremente", "Considerada abusiva e nula, podendo o consumidor ajuizar a ação em seu próprio domicílio", "Válida apenas se o foro eleito for a capital do estado", "Obrigatória para o consumidor"], answer: "Considerada abusiva e nula, podendo o consumidor ajuizar a ação em seu próprio domicílio", tip: "A facilitação da defesa do consumidor em juízo é um direito básico que não pode ser afastado por uma cláusula contratual.", law: "Art. 6º, VIII e Art. 101, I do CDC" },
+            { question: "O que é 'greenwashing' no âmbito consumerista?", options: ["Uma técnica de limpeza de produtos", "Publicidade enganosa que promove falsas qualidades ecológicas ou de sustentabilidade de um produto ou empresa", "A venda de produtos orgânicos", "Uma campanha para pintar prédios de verde"], answer: "Publicidade enganosa que promove falsas qualidades ecológicas ou de sustentabilidade de um produto ou empresa", tip: "É o 'marketing verde' sem lastro na realidade, aproveitando-se da crescente preocupação ambiental dos consumidores.", law: "Art. 37 do CDC (Publicidade Enganosa)" },
+            { question: "Em caso de vício oculto (que só se manifesta após certo tempo de uso), o prazo decadencial para reclamar inicia-se:", options: ["No dia da entrega do produto", "30 dias após a entrega", "No momento em que ficar evidenciado o defeito", "Apenas no último dia da garantia contratual"], answer: "No momento em que ficar evidenciado o defeito", tip: "Para defeitos não aparentes, o prazo só começa a correr quando o consumidor toma ciência do problema.", law: "Art. 26, § 3º do CDC" },
+            { question: "A teoria do 'Duty to Mitigate the Loss' (dever de mitigar o próprio prejuízo) é aplicada nas relações de consumo para:", options: ["Obrigar o fornecedor a diminuir o prejuízo do consumidor", "Exigir que o consumidor tome medidas razoáveis para não agravar o dano sofrido por uma falha do fornecedor", "Permitir que o fornecedor se exima de qualquer responsabilidade", "Aumentar a indenização devida ao consumidor"], answer: "Exigir que o consumidor tome medidas razoáveis para não agravar o dano sofrido por uma falha do fornecedor", tip: "Baseada na boa-fé objetiva, essa teoria impede que o consumidor permaneça inerte e deixe o dano aumentar para depois pedir uma indenização maior.", law: "Doutrina e Jurisprudência (Enunciado 169 do CJF)" }
+        ];
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        
+        function startGame() {
+            welcomeScreen.classList.add('hidden');
+            endScreen.classList.add('hidden');
+            mainGame.classList.remove('hidden');
+
+            score = 0;
+            currentQuestionIndex = 0;
+            lifelines = { skip: 1 };
+            acceptingAnswers = true;
+            
+            skipBtn.disabled = false;
+            skipBtn.textContent = 'Pular (1)';
+            
+            shuffleArray(questionBank);
+            activeQuestions = questionBank.slice(0, TOTAL_QUESTIONS_PER_QUIZ);
+            
+            loadQuestion();
+        }
+        
+        function loadQuestion() {
+            if (currentQuestionIndex >= TOTAL_QUESTIONS_PER_QUIZ) {
+                endGame();
+                return;
+            }
+
+            acceptingAnswers = true;
+            // Reseta as dicas para a nova questão
+            lifelines.tip = true;
+            lifelines.law = true;
+            updateLifelineButtons();
+
+            const currentQuestion = activeQuestions[currentQuestionIndex];
+            
+            questionNumberEl.textContent = currentQuestionIndex + 1;
+            scoreEl.textContent = score;
+            questionTextEl.textContent = currentQuestion.question;
+            
+            answerOptionsEl.innerHTML = "";
+            const shuffledOptions = [...currentQuestion.options];
+            shuffleArray(shuffledOptions);
+
+            shuffledOptions.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.className = "answer-option text-left p-4 rounded-lg bg-gray-100 text-gray-700 font-semibold";
+                button.onclick = () => selectAnswer(button, option);
+                answerOptionsEl.appendChild(button);
+            });
+        }
+        
+        function selectAnswer(button, selectedOption) {
+            if (!acceptingAnswers) return;
+            acceptingAnswers = false;
+
+            button.classList.add('selected');
+            const currentQuestion = activeQuestions[currentQuestionIndex];
+            const isCorrect = selectedOption === currentQuestion.answer;
+            
+            if (isCorrect) {
+                score++;
+                button.classList.add('correct');
+            } else {
+                button.classList.add('incorrect');
+                Array.from(answerOptionsEl.children).forEach(btn => {
+                    if (btn.textContent === currentQuestion.answer) {
+                        btn.classList.add('correct');
+                    }
+                });
+            }
+            
+            setTimeout(() => {
+                currentQuestionIndex++;
+                loadQuestion();
+            }, 2500);
+        }
+
+        function updateLifelineButtons() {
+            skipBtn.disabled = lifelines.skip === 0;
+            tipBtn.disabled = !lifelines.tip;
+            lawBtn.disabled = !lifelines.law;
+        }
+
+        function useSkip() {
+            if (lifelines.skip > 0) {
+                lifelines.skip--;
+                skipBtn.textContent = `Pular (0)`;
+                updateLifelineButtons();
+                currentQuestionIndex++;
+                loadQuestion();
+            }
+        }
+
+        function useGoldenTip() {
+            if (lifelines.tip) {
+                lifelines.tip = false;
+                updateLifelineButtons();
+                const currentQuestion = activeQuestions[currentQuestionIndex];
+                modalTitle.textContent = "Dica de Ouro";
+                modalContent.textContent = currentQuestion.tip;
+                modal.classList.remove('hidden');
+            }
+        }
+
+        function useLawText() {
+            if (lifelines.law) {
+                lifelines.law = false;
+                updateLifelineButtons();
+                const currentQuestion = activeQuestions[currentQuestionIndex];
+                modalTitle.textContent = "Na Letra da Lei";
+                modalContent.textContent = `Consulte: ${currentQuestion.law}`;
+                modal.classList.remove('hidden');
+            }
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+        }
+        window.closeModal = closeModal;
+
+        function endGame() {
+            mainGame.classList.add('hidden');
+            endScreen.classList.remove('hidden');
+            
+            finalScoreEl.textContent = score;
+            const percentage = (score / TOTAL_QUESTIONS_PER_QUIZ) * 100;
+            if (percentage >= 70) {
+                endMessageEl.textContent = "Excelente desempenho! Você demonstrou profundo conhecimento da matéria. Parabéns!";
+            } else if (percentage >= 50) {
+                endMessageEl.textContent = "Bom resultado! Você está no caminho certo. Foque na revisão das jurisprudências e exceções.";
+            } else {
+                 endMessageEl.textContent = "Não desanime! As questões são complexas. A revisão constante levará à maestria.";
+            }
+        }
+
+        // Event Listeners
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', startGame);
+        skipBtn.addEventListener('click', useSkip);
+        tipBtn.addEventListener('click', useGoldenTip);
+        lawBtn.addEventListener('click', useLawText);
+
+    </script>
+</body>
+</html>
