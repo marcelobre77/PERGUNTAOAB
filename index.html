@@ -1,425 +1,465 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prepara OAB - Quiz Multidisciplinar</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Montserrat', sans-serif;
-        }
-        .btn-lifeline:disabled {
-            background-color: #6b7280;
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
-        .answer-option {
-            border: 2px solid #e5e7eb;
-            transition: all 0.2s ease-in-out;
-        }
-        .answer-option:hover:not(.selected) {
-            border-color: #fbbf24;
-            background-color: #fefce8;
-        }
-        .answer-option.selected {
-            transform: translateX(5px);
-        }
-        .answer-option.correct {
-            background-color: #dcfce7 !important;
-            border-color: #22c55e !important;
-            color: #166534;
-        }
-        .answer-option.incorrect {
-            background-color: #fee2e2 !important;
-            border-color: #ef4444 !important;
-            color: #991b1b;
-        }
-        .subject-btn {
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-        }
-        .subject-btn:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-    </style>
-</head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+import React, { useState, useEffect } from 'react';
+import { Trash2, Package, CheckCircle, XCircle, RotateCcw, Trophy, Users, Plus, Minus, BookOpen, ArrowRight } from 'lucide-react';
 
-    <div id="game-container" class="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-6 md:p-8">
+// Banco de dados com 60 competências constitucionais + Fundamento Legal Exato
+const COMPETENCIAS = [
+  // UNIÃO
+  { texto: "Declarar a guerra e celebrar a paz", resposta: "União", fundamento: "Art. 21, II, CF" },
+  { texto: "Emitir moeda", resposta: "União", fundamento: "Art. 21, III, CF" },
+  { texto: "Administrar as reservas cambiais do País", resposta: "União", fundamento: "Art. 21, IV, CF" },
+  { texto: "Manter o serviço postal e o correio aéreo nacional", resposta: "União", fundamento: "Art. 21, X, CF" },
+  { texto: "Explorar os serviços e instalações nucleares de qualquer natureza", resposta: "União", fundamento: "Art. 21, XXIII, CF" },
+  { texto: "Organizar e manter a polícia federal, a rodoviária e a ferroviária", resposta: "União", fundamento: "Art. 21, XIV, CF" },
+  { texto: "Conceder anistia", resposta: "União", fundamento: "Art. 21, XVII, CF" },
+  { texto: "Legislar sobre direito civil, comercial, penal, processual e do trabalho", resposta: "União", fundamento: "Art. 22, I, CF" },
+  { texto: "Legislar sobre desapropriação", resposta: "União", fundamento: "Art. 22, II, CF" },
+  { texto: "Legislar sobre requisições civis e militares", resposta: "União", fundamento: "Art. 22, III, CF" },
+  { texto: "Legislar sobre águas, energia, informática, telecomunicações e radiodifusão", resposta: "União", fundamento: "Art. 22, IV, CF" },
+  { texto: "Legislar sobre serviço postal", resposta: "União", fundamento: "Art. 22, V, CF" },
+  { texto: "Legislar sobre sistema monetário e de medidas", resposta: "União", fundamento: "Art. 22, VI, CF" },
+  { texto: "Legislar sobre política de crédito, câmbio e seguros", resposta: "União", fundamento: "Art. 22, VII, CF" },
+  { texto: "Legislar sobre comércio exterior e interestadual", resposta: "União", fundamento: "Art. 22, VIII, CF" },
+  { texto: "Legislar sobre diretrizes da política nacional de transportes", resposta: "União", fundamento: "Art. 22, IX, CF" },
+  { texto: "Legislar sobre jazidas, minas e outros recursos minerais", resposta: "União", fundamento: "Art. 22, XII, CF" },
+  { texto: "Legislar sobre nacionalidade, cidadania e naturalização", resposta: "União", fundamento: "Art. 22, XIII, CF" },
+  { texto: "Legislar sobre populações indígenas", resposta: "União", fundamento: "Art. 22, XIV, CF" },
+  { texto: "Autorizar e fiscalizar a produção e o comércio de material bélico", resposta: "União", fundamento: "Art. 21, VI, CF" },
 
-        <!-- Welcome Screen -->
-        <div id="welcome-screen" class="text-center">
-            <img src="https://placehold.co/150x150/1e3a8a/ffffff?text=OAB&font=montserrat" alt="Logo OAB" class="mx-auto rounded-full mb-6 border-4 border-blue-800">
-            <h1 class="text-4xl md:text-5xl font-bold text-blue-900">Prepara OAB</h1>
-            <p class="text-xl text-gray-600 mt-2 mb-8">Quiz Avançado para sua Aprovação</p>
-            
-            <div class="bg-gray-50 rounded-lg p-4 my-6 text-left text-sm text-gray-700">
-                <h3 class="font-bold text-lg mb-2 text-center text-blue-800">Instruções e Ajudas</h3>
-                <p class="mb-2">Escolha uma matéria e responda 15 questões de alto nível. Você tem 3 ajudas, que podem ser usadas <strong>apenas uma vez por quiz</strong>:</p>
-                <ul class="list-disc list-inside space-y-1">
-                    <li><strong class="text-gray-600">Pular (1):</strong> Pula a questão atual sem perder pontos.</li>
-                    <li><strong class="text-amber-600">Dica de Ouro:</strong> Fornece uma pista ou um raciocínio para resolver a questão.</li>
-                    <li><strong class="text-green-600">Na Letra da Lei:</strong> Indica o artigo, súmula ou base legal para encontrar a resposta.</li>
-                </ul>
-            </div>
+  // ESTADO
+  { texto: "Explorar diretamente, ou mediante concessão, os serviços locais de gás canalizado", resposta: "Estado", fundamento: "Art. 25, § 2º, CF" },
+  { texto: "Instituir regiões metropolitanas, aglomerações urbanas e microrregiões", resposta: "Estado", fundamento: "Art. 25, § 3º, CF" },
+  { texto: "Exercer as competências que não lhes sejam vedadas (Competência Residual)", resposta: "Estado", fundamento: "Art. 25, § 1º, CF" },
+  { texto: "Legislar concorrentemente sobre direito tributário, financeiro e penitenciário", resposta: "Estado", fundamento: "Art. 24, I, CF" },
+  { texto: "Legislar concorrentemente sobre orçamento", resposta: "Estado", fundamento: "Art. 24, II, CF" },
+  { texto: "Legislar concorrentemente sobre juntas comerciais", resposta: "Estado", fundamento: "Art. 24, III, CF" },
+  { texto: "Legislar concorrentemente sobre custas dos serviços forenses", resposta: "Estado", fundamento: "Art. 24, IV, CF" },
+  { texto: "Legislar concorrentemente sobre produção e consumo", resposta: "Estado", fundamento: "Art. 24, V, CF" },
+  { texto: "Legislar concorrentemente sobre florestas, caça, pesca e fauna", resposta: "Estado", fundamento: "Art. 24, VI, CF" },
+  { texto: "Legislar concorrentemente sobre proteção ao patrimônio histórico e cultural", resposta: "Estado", fundamento: "Art. 24, VII, CF" },
+  { texto: "Legislar concorrentemente sobre responsabilidade por dano ao meio ambiente", resposta: "Estado", fundamento: "Art. 24, VIII, CF" },
+  { texto: "Legislar concorrentemente sobre educação, cultura, ensino e desporto", resposta: "Estado", fundamento: "Art. 24, IX, CF" },
+  { texto: "Legislar concorrentemente sobre criação do juizado de pequenas causas", resposta: "Estado", fundamento: "Art. 24, X, CF" },
+  { texto: "Legislar concorrentemente sobre procedimentos em matéria processual", resposta: "Estado", fundamento: "Art. 24, XI, CF" },
+  { texto: "Legislar concorrentemente sobre previdência social e defesa da saúde", resposta: "Estado", fundamento: "Art. 24, XII, CF" },
+  { texto: "Legislar concorrentemente sobre assistência jurídica e Defensoria pública", resposta: "Estado", fundamento: "Art. 24, XIII, CF" },
+  { texto: "Legislar concorrentemente sobre integração social de pessoas com deficiência", resposta: "Estado", fundamento: "Art. 24, XIV, CF" },
+  { texto: "Legislar concorrentemente sobre proteção à infância e à juventude", resposta: "Estado", fundamento: "Art. 24, XV, CF" },
+  { texto: "Legislar concorrentemente sobre organização, garantias e direitos das polícias civis", resposta: "Estado", fundamento: "Art. 24, XVI, CF" },
+  { texto: "Exercer competência legislativa plena inexistindo lei federal sobre normas gerais", resposta: "Estado", fundamento: "Art. 24, § 3º, CF" },
 
-            <h3 class="text-2xl font-bold text-gray-800 mb-4">Escolha a matéria:</h3>
-            <div id="subject-selection" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button data-subject="consumer" class="subject-btn bg-blue-700 hover:bg-blue-800 text-white font-bold py-4 px-6 rounded-lg text-xl">Direito do Consumidor</button>
-                <button data-subject="penal" class="subject-btn bg-red-700 hover:bg-red-800 text-white font-bold py-4 px-6 rounded-lg text-xl">Direito Penal</button>
-                <button data-subject="constitutional" class="subject-btn bg-green-700 hover:bg-green-800 text-white font-bold py-4 px-6 rounded-lg text-xl">Direito Constitucional</button>
-            </div>
-            <button id="progress-btn" class="mt-6 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">Meu Progresso</button>
+  // MUNICÍPIO
+  { texto: "Legislar sobre assuntos de interesse local", resposta: "Município", fundamento: "Art. 30, I, CF" },
+  { texto: "Suplementar a legislação federal e a estadual no que couber", resposta: "Município", fundamento: "Art. 30, II, CF" },
+  { texto: "Instituir e arrecadar os tributos de sua competência e aplicar suas rendas", resposta: "Município", fundamento: "Art. 30, III, CF" },
+  { texto: "Criar, organizar e suprimir distritos, observada a legislação estadual", resposta: "Município", fundamento: "Art. 30, IV, CF" },
+  { texto: "Organizar e prestar os serviços públicos de interesse local", resposta: "Município", fundamento: "Art. 30, V, CF" },
+  { texto: "Organizar e prestar o serviço de transporte coletivo municipal", resposta: "Município", fundamento: "Art. 30, V, CF" },
+  { texto: "Manter programas de educação infantil e de ensino fundamental", resposta: "Município", fundamento: "Art. 30, VI, CF" },
+  { texto: "Prestar serviços de atendimento à saúde da população local", resposta: "Município", fundamento: "Art. 30, VII, CF" },
+  { texto: "Promover o adequado ordenamento territorial e controle do uso do solo", resposta: "Município", fundamento: "Art. 30, VIII, CF" },
+  { texto: "Promover a proteção do patrimônio histórico-cultural local", resposta: "Município", fundamento: "Art. 30, IX, CF" },
+  { texto: "Fixar o horário de funcionamento de estabelecimento comercial local", resposta: "Município", fundamento: "Súmula Vinculante 38 (c/c Art. 30, I, CF)" },
+  { texto: "Instituir guarda municipal para proteção de seus bens, serviços e instalações", resposta: "Município", fundamento: "Art. 144, § 8º, CF" },
+  { texto: "Executar a política de desenvolvimento urbano municipal", resposta: "Município", fundamento: "Art. 182, caput, CF" },
+  { texto: "Exigir do proprietário do solo urbano não edificado o adequado aproveitamento", resposta: "Município", fundamento: "Art. 182, § 4º, CF" },
+  { texto: "Aprovar o plano diretor (obrigatório para cidades com mais de 20 mil habitantes)", resposta: "Município", fundamento: "Art. 182, § 1º, CF" },
+  { texto: "Promover a desapropriação de área urbana por interesse social para reforma urbana", resposta: "Município", fundamento: "Art. 182, § 4º, III, CF" },
+  { texto: "Regulamentar o serviço de táxi e transporte por aplicativos no âmbito local", resposta: "Município", fundamento: "Art. 30, I e V, CF (Jurisprudência)" },
+  { texto: "Cuidar da limpeza urbana e do manejo de resíduos sólidos em seu território", resposta: "Município", fundamento: "Art. 30, V, CF" },
+  { texto: "Conceder e renovar licença de localização e funcionamento para o comércio local", resposta: "Município", fundamento: "Art. 30, I, CF" },
+  { texto: "Sinalizar as vias urbanas e regulamentar o trânsito local", resposta: "Município", fundamento: "Art. 30, I, CF" }
+];
+
+const shuffleArray = (array) => {
+  const newArr = [...array];
+  for (let i = newArr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+  }
+  return newArr;
+};
+
+export default function App() {
+  const [gameState, setGameState] = useState('setup');
+  const [teams, setTeams] = useState([
+    { id: 1, name: 'Equipe Alpha', score: 0, errors: 0 },
+    { id: 2, name: 'Equipe Beta', score: 0, errors: 0 }
+  ]);
+  const [currentTeamIndex, setCurrentTeamIndex] = useState(0);
+
+  const [pool, setPool] = useState([]);
+  const [activeCard, setActiveCard] = useState(null);
+  const [status, setStatus] = useState('idle'); 
+  const [draggedOver, setDraggedOver] = useState(null);
+  
+  // Novo estado para controlar o Modal de Aprendizado (Flashcard)
+  const [feedback, setFeedback] = useState(null); 
+
+  // ---- FUNÇÕES DE SETUP DAS EQUIPES ----
+  const handleAddTeam = () => {
+    if (teams.length < 3) {
+      setTeams([...teams, { id: Date.now(), name: `Equipe ${teams.length + 1}`, score: 0, errors: 0 }]);
+    }
+  };
+
+  const handleRemoveTeam = (id) => {
+    if (teams.length > 2) {
+      setTeams(teams.filter(t => t.id !== id));
+    }
+  };
+
+  const updateTeamName = (id, newName) => {
+    setTeams(teams.map(t => t.id === id ? { ...t, name: newName } : t));
+  };
+
+  const startGame = () => {
+    const resetTeams = teams.map(t => ({ ...t, score: 0, errors: 0 }));
+    setTeams(resetTeams);
+    setPool(shuffleArray(COMPETENCIAS));
+    setActiveCard(null);
+    setStatus('idle');
+    setCurrentTeamIndex(0);
+    setFeedback(null);
+    setGameState('playing');
+  };
+
+  const backToSetup = () => {
+    setGameState('setup');
+  };
+
+  // ---- LÓGICA DO JOGO ----
+  const drawCard = () => {
+    if (pool.length === 0) {
+      setGameState('finished');
+      return;
+    }
+    const newPool = [...pool];
+    const nextCard = newPool.pop();
+    setPool(newPool);
+    setActiveCard(nextCard);
+    setStatus('idle');
+  };
+
+  const advanceTurn = () => {
+    setCurrentTeamIndex((prev) => (prev + 1) % teams.length);
+    if (pool.length === 0) {
+      setGameState('finished');
+    }
+  };
+
+  const handleGuess = (guess) => {
+    if (!activeCard || status !== 'idle') return;
+
+    const isCorrect = activeCard.resposta === guess;
+    setStatus(isCorrect ? 'correct' : 'wrong');
+
+    if (isCorrect) {
+      setTeams(prev => prev.map((t, i) => i === currentTeamIndex ? { ...t, score: t.score + 1 } : t));
+    } else {
+      setTeams(prev => prev.map((t, i) => i === currentTeamIndex ? { ...t, errors: t.errors + 1 } : t));
+    }
+
+    // Espera a animação do card (cair no balde ou lixo) e abre o Painel Educativo
+    setTimeout(() => {
+      setFeedback({
+        type: isCorrect ? 'correct' : 'wrong',
+        card: activeCard
+      });
+    }, 800);
+  };
+
+  const handleNextTurn = () => {
+    setActiveCard(null);
+    setStatus('idle');
+    setFeedback(null);
+    advanceTurn();
+  };
+
+  // ---- EVENTOS DE DRAG AND DROP ----
+  const handleDragStart = (e) => {
+    if (status !== 'idle') e.preventDefault();
+    e.dataTransfer.setData('text/plain', activeCard?.resposta);
+  };
+
+  const handleDragOver = (e, bucketName) => {
+    e.preventDefault();
+    if (status === 'idle') {
+      setDraggedOver(bucketName);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDraggedOver(null);
+  };
+
+  const handleDrop = (e, bucketName) => {
+    e.preventDefault();
+    setDraggedOver(null);
+    handleGuess(bucketName);
+  };
+
+  // ---- TELAS AUXILIARES (SETUP e FINISHED) mantidas iguais... ----
+  if (gameState === 'setup') {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <Users className="w-8 h-8 text-blue-600" />
+            <h1 className="text-2xl font-black text-slate-800 uppercase text-center">Configurar Equipes</h1>
+          </div>
+          <p className="text-slate-500 text-center mb-6 text-sm">Jogue com 2 ou 3 equipes. As rodadas serão alternadas.</p>
+          <div className="space-y-4 mb-6">
+            {teams.map((team, index) => (
+              <div key={team.id} className="flex items-center gap-2">
+                <span className="font-bold text-slate-400 w-6">{index + 1}.</span>
+                <input 
+                  type="text" 
+                  value={team.name}
+                  onChange={(e) => updateTeamName(team.id, e.target.value)}
+                  maxLength={15}
+                  className="flex-1 bg-slate-100 border border-slate-300 rounded-lg px-4 py-3 font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Nome da Equipe"
+                />
+                {teams.length > 2 && (
+                  <button onClick={() => handleRemoveTeam(team.id)} className="p-3 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"><Minus className="w-5 h-5" /></button>
+                )}
+              </div>
+            ))}
+          </div>
+          {teams.length < 3 && (
+            <button onClick={handleAddTeam} className="w-full mb-6 py-3 border-2 border-dashed border-blue-400 text-blue-600 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-blue-50 transition-colors">
+              <Plus className="w-5 h-5" /> Adicionar 3ª Equipe
+            </button>
+          )}
+          <button onClick={startGame} disabled={teams.some(t => t.name.trim() === '')} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed text-white font-black py-4 px-6 rounded-xl transition-all uppercase tracking-wider text-lg shadow-lg">
+            Começar Jogo
+          </button>
         </div>
+      </div>
+    );
+  }
 
-        <!-- Main Game UI -->
-        <div id="main-game" class="hidden">
-            <!-- Header -->
-            <div class="flex flex-col md:flex-row justify-between items-center mb-6 border-b border-gray-200 pb-4">
-                <button id="back-to-menu-btn" class="text-blue-700 font-semibold mb-2 md:mb-0 hover:underline">← Voltar ao Menu</button>
-                <h2 id="quiz-title" class="text-xl md:text-2xl font-bold text-blue-900"></h2>
-                <div class="text-lg font-semibold bg-gray-100 text-gray-800 px-4 py-2 rounded-lg mt-2 md:mt-0">
-                    Questão: <span id="question-number">1</span>/15 | Acertos: <span id="score">0</span>
+  if (gameState === 'finished') {
+    const sortedTeams = [...teams].sort((a, b) => b.score - a.score);
+    const winner = sortedTeams[0];
+    const isTie = sortedTeams.length > 1 && sortedTeams[0].score === sortedTeams[1].score;
+
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full text-center">
+          <Trophy className="w-24 h-24 text-yellow-500 mx-auto mb-4" />
+          <h1 className="text-3xl font-black text-slate-800 mb-2 uppercase">Fim de Jogo!</h1>
+          {isTie ? <p className="text-xl font-bold text-blue-600 mb-6">Tivemos um empate!</p> : <p className="text-xl font-bold text-green-600 mb-6">Vitória da {winner.name}!</p>}
+          <div className="space-y-3 mb-8">
+            {sortedTeams.map((team, index) => (
+              <div key={team.id} className={`flex items-center justify-between p-4 rounded-xl border-2 ${index === 0 && !isTie ? 'border-yellow-400 bg-yellow-50' : 'border-slate-200 bg-slate-50'}`}>
+                <div className="flex items-center gap-3">
+                  <span className={`font-black text-xl ${index === 0 && !isTie ? 'text-yellow-600' : 'text-slate-400'}`}>{index + 1}º</span>
+                  <span className="font-bold text-lg text-slate-700">{team.name}</span>
                 </div>
-            </div>
-
-            <!-- Lifelines -->
-            <div class="flex flex-wrap justify-center gap-2 md:gap-4 mb-6">
-                <button id="skip-btn" class="btn-lifeline bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg">Pular (1)</button>
-                <button id="tip-btn" class="btn-lifeline bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-4 rounded-lg">Dica de Ouro</button>
-                <button id="law-btn" class="btn-lifeline bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg">Na Letra da Lei</button>
-            </div>
-
-            <!-- Question Area -->
-            <div id="quiz-area" class="text-gray-800">
-                <div class="bg-gray-50 p-6 rounded-lg mb-6 min-h-[120px]">
-                    <p id="question-text" class="text-lg"></p>
+                <div className="flex gap-4 text-sm font-bold">
+                  <span className="text-green-600">{team.score} Acertos</span>
+                  <span className="text-red-500">{team.errors} Erros</span>
                 </div>
-                <div id="answer-options" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-            </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-4">
+            <button onClick={startGame} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-xl transition-all flex items-center justify-center gap-2">
+              <RotateCcw className="w-5 h-5" /> Revanche
+            </button>
+            <button onClick={backToSetup} className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-4 px-4 rounded-xl transition-all">
+              Mudar Equipes
+            </button>
+          </div>
         </div>
+      </div>
+    );
+  }
+
+  // ---- TELA PRINCIPAL DO JOGO (PLAYING) ----
+  const activeTeam = teams[currentTeamIndex];
+
+  return (
+    <div className="min-h-screen bg-slate-100 flex flex-col font-sans select-none">
+      
+      {/* HEADER MULTIPLAYER */}
+      <header className="bg-slate-900 text-white p-4 shadow-md z-10 border-b-4 border-slate-800">
+        <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-6">
+          <div className="text-center lg:text-left">
+            <h1 className="text-2xl font-black uppercase tracking-wider">De Quem é a Competência?</h1>
+            <p className="text-slate-400 text-sm">Direito Constitucional - CF/88</p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-3 w-full lg:w-auto">
+            {teams.map((team, index) => {
+              const isActive = index === currentTeamIndex;
+              return (
+                <div key={team.id} className={`flex flex-col px-4 py-2 rounded-lg border-2 transition-all min-w-[140px] ${isActive ? 'bg-blue-900/80 border-blue-400 scale-105 shadow-lg shadow-blue-500/20' : 'bg-slate-800 border-slate-700 opacity-70'}`}>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className={`text-xs font-black uppercase tracking-wider ${isActive ? 'text-blue-300' : 'text-slate-400'}`}>{team.name}</span>
+                    {isActive && <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />}
+                  </div>
+                  <div className="flex justify-between text-sm font-bold">
+                    <span className="text-green-400">{team.score} <CheckCircle className="inline w-3 h-3 mb-0.5"/></span>
+                    <span className="text-red-400">{team.errors} <XCircle className="inline w-3 h-3 mb-0.5"/></span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </header>
+
+      {/* ÁREA DO JOGO */}
+      <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start relative">
         
-        <!-- End Game Screen -->
-        <div id="end-screen" class="hidden text-center">
-             <h2 class="text-4xl font-bold text-blue-900 mb-4">Quiz Finalizado!</h2>
-             <p class="text-2xl mb-2">Seu desempenho:</p>
-             <p class="text-5xl font-bold mb-8"><span id="final-score"></span> / 15</p>
-             <p id="end-message" class="text-lg text-gray-700 mb-8"></p>
-             <button id="restart-btn" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-10 rounded-lg text-xl">
-                Voltar ao Menu
-             </button>
+        {/* CAIXINHA & CARD ATUAL (Lado Esquerdo) */}
+        <div className="lg:col-span-4 flex flex-col gap-6 items-center w-full">
+          <div className={`w-full py-3 px-4 rounded-xl text-center font-black uppercase tracking-wider shadow-sm transition-colors ${status === 'idle' ? 'bg-blue-600 text-white' : 'bg-slate-300 text-slate-500'}`}>
+            Vez da: {activeTeam.name}
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 w-full text-center">
+            <button
+              onClick={drawCard}
+              disabled={!!activeCard || status !== 'idle'}
+              className={`w-full relative group p-8 rounded-xl border-4 border-dashed transition-all flex flex-col items-center gap-4
+                ${(!activeCard && status === 'idle') 
+                  ? 'border-blue-400 bg-blue-50 hover:bg-blue-100 cursor-pointer text-blue-700 shadow-inner' 
+                  : 'border-slate-300 bg-slate-100 text-slate-400 cursor-not-allowed'}`}
+            >
+              <Package className={`w-16 h-16 ${(!activeCard && status === 'idle') ? 'animate-bounce' : ''}`} />
+              <span className="font-bold text-lg uppercase tracking-wide">
+                {pool.length > 0 ? "Sortear Competência" : "Fim dos Casos"}
+              </span>
+              <span className="text-sm opacity-80 font-medium">Restam {pool.length} casos no fundo</span>
+            </button>
+          </div>
+
+          {/* CARD ATIVO */}
+          <div className="h-64 w-full flex items-center justify-center">
+            {activeCard && (
+              <div 
+                draggable={status === 'idle'}
+                onDragStart={handleDragStart}
+                className={`w-full max-w-sm bg-yellow-50 p-6 rounded-xl shadow-lg border-2 border-yellow-300 cursor-grab active:cursor-grabbing transform transition-all duration-500 flex flex-col gap-4 items-center text-center
+                  ${status === 'correct' ? 'scale-0 opacity-0 bg-green-100 border-green-400' : ''}
+                  ${status === 'wrong' ? 'translate-x-[200px] lg:translate-x-[400px] scale-50 opacity-0 rotate-12 bg-red-100 border-red-400' : 'scale-100 opacity-100'}
+                `}
+              >
+                <div className="text-xs font-black text-yellow-600/80 uppercase tracking-widest mb-2 border-b-2 border-yellow-200/50 w-full pb-2">Atribuição</div>
+                <p className="text-lg sm:text-xl font-bold text-slate-800 leading-snug">"{activeCard.texto}"</p>
+                <div className="mt-auto pt-4 text-xs text-slate-500 font-bold flex flex-col items-center gap-1 uppercase tracking-wide">
+                  <span className="text-blue-600">{activeTeam.name}</span>
+                  <span>Arraste ou Clique no Balde</span>
+                </div>
+              </div>
+            )}
+            {!activeCard && status === 'idle' && (
+              <div className="text-slate-400 font-medium border-2 border-dashed border-slate-300 p-8 rounded-xl w-full text-center">
+                Aperte a caixa para sortear a vez da <br/><span className="text-blue-600 font-bold uppercase">{activeTeam.name}</span>.
+              </div>
+            )}
+          </div>
         </div>
 
-        <!-- Progress Screen -->
-        <div id="progress-screen" class="hidden">
-            <h2 class="text-3xl font-bold text-blue-900 mb-6 text-center">Meu Progresso</h2>
-            <div id="progress-stats" class="space-y-4">
-                <!-- Stats will be injected here -->
-            </div>
-            <div class="text-center mt-8">
-                <button id="back-from-progress-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">Voltar ao Menu</button>
-            </div>
+        {/* BALDES DE COMPETÊNCIA (Centro) */}
+        <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4 lg:gap-6">
+          {['União', 'Estado', 'Município'].map((esfera) => {
+            const themes = {
+              União: { base: 'bg-blue-100 border-blue-300', over: 'bg-blue-200 border-blue-500', icon: 'bg-blue-600', text: 'text-blue-900', letter: 'U' },
+              Estado: { base: 'bg-orange-100 border-orange-300', over: 'bg-orange-200 border-orange-500', icon: 'bg-orange-500', text: 'text-orange-900', letter: 'E' },
+              Município: { base: 'bg-purple-100 border-purple-300', over: 'bg-purple-200 border-purple-500', icon: 'bg-purple-600', text: 'text-purple-900', letter: 'M' }
+            };
+            const theme = themes[esfera];
+            const isOver = draggedOver === esfera;
+
+            return (
+              <button 
+                key={esfera}
+                onClick={() => handleGuess(esfera)}
+                onDragOver={(e) => handleDragOver(e, esfera)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, esfera)}
+                className={`flex flex-col items-center justify-center p-6 rounded-2xl border-4 transition-all w-full
+                  ${activeCard ? 'cursor-pointer hover:scale-105 hover:shadow-lg' : 'opacity-70 cursor-default'}
+                  ${isOver ? `${theme.over} scale-105 shadow-xl` : theme.base}
+                `}
+              >
+                <div className={`w-16 h-16 ${theme.icon} rounded-full flex items-center justify-center mb-3 shadow-inner`}>
+                  <span className="text-white font-black text-2xl">{theme.letter}</span>
+                </div>
+                <h2 className={`text-xl font-black ${theme.text} uppercase`}>{esfera}</h2>
+              </button>
+            )
+          })}
         </div>
+
+        {/* LIXO DO ERRO (Lado Direito) */}
+        <div className="lg:col-span-3 flex flex-col justify-center h-full relative">
+          <div className={`p-8 rounded-2xl border-4 flex flex-col items-center text-center transition-all duration-300 z-10 relative
+            ${status === 'wrong' ? 'bg-red-200 border-red-600 scale-105 shadow-2xl' : 'bg-slate-200 border-slate-300'}
+          `}>
+            <Trash2 className={`w-20 h-20 mb-4 transition-all duration-300 ${status === 'wrong' ? 'text-red-600 animate-bounce' : 'text-slate-400'}`} />
+            <h2 className={`text-2xl font-black uppercase mb-2 ${status === 'wrong' ? 'text-red-700' : 'text-slate-500'}`}>Lixo do Erro</h2>
+            <p className="text-sm font-medium text-slate-500 mt-2">Erros da equipe caem direto aqui.</p>
+          </div>
+        </div>
+
+      </main>
+
+      {/* OVERLAY / MODAL EDUCATIVO DE FLASHCARD */}
+      {feedback && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
+          <div className={`bg-white border-8 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl flex flex-col items-center text-center transform transition-all duration-300 scale-100
+            ${feedback.type === 'correct' ? 'border-green-500' : 'border-red-500'}
+          `}>
+            
+            {/* Ícone de Sucesso ou Erro */}
+            {feedback.type === 'correct' ? (
+               <CheckCircle className="w-20 h-20 text-green-500 mb-4" />
+            ) : (
+               <XCircle className="w-20 h-20 text-red-500 mb-4" />
+            )}
+            
+            <h2 className={`text-3xl font-black uppercase mb-2 tracking-wide ${feedback.type === 'correct' ? 'text-green-600' : 'text-red-600'}`}>
+              {feedback.type === 'correct' ? 'Acertou!' : 'Ops, Errou!'}
+            </h2>
+
+            <div className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
+              <p className="text-slate-700 font-medium italic">"{feedback.card.texto}"</p>
+            </div>
+
+            <div className="flex flex-col gap-1 w-full bg-slate-100 rounded-xl p-4 mb-4 border border-slate-200">
+              <span className="text-sm font-bold text-slate-500 uppercase">A Competência é:</span>
+              <span className={`text-2xl font-black uppercase tracking-wider
+                 ${feedback.card.resposta === 'União' ? 'text-blue-600' : feedback.card.resposta === 'Estado' ? 'text-orange-600' : 'text-purple-600'}
+              `}>
+                {feedback.card.resposta}
+              </span>
+            </div>
+
+            {/* CAIXA DE FUNDAMENTO LEGAL (Ouro/Amarelo) */}
+            <div className="w-full bg-yellow-100 border-2 border-yellow-300 rounded-xl p-4 mb-8 relative shadow-inner">
+              <BookOpen className="w-8 h-8 text-yellow-500 absolute -top-4 left-1/2 -translate-x-1/2 bg-yellow-100 rounded-full p-1 border-2 border-yellow-300" />
+              <span className="text-xs font-black text-yellow-700 uppercase tracking-widest block mb-2 mt-2">Fundamento Legal</span>
+              <span className="text-xl font-black text-yellow-900">
+                {feedback.card.fundamento}
+              </span>
+            </div>
+
+            <button 
+              onClick={handleNextTurn}
+              className={`w-full text-white font-black py-4 px-6 rounded-xl transition-all uppercase tracking-wider text-lg shadow-lg flex items-center justify-center gap-2 hover:scale-105 active:scale-95
+                ${feedback.type === 'correct' ? 'bg-green-600 hover:bg-green-700 shadow-green-600/30' : 'bg-red-600 hover:bg-red-700 shadow-red-600/30'}
+              `}
+            >
+              Próxima Rodada <ArrowRight className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
-
-    <!-- Modal for Helps -->
-    <div id="modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-white rounded-lg p-8 max-w-lg w-full text-center relative">
-             <button onclick="closeModal()" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
-             <h3 id="modal-title" class="text-2xl font-bold mb-4 text-blue-900"></h3>
-             <p id="modal-content" class="text-gray-700 text-lg"></p>
-        </div>
-    </div>
-
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const welcomeScreen = document.getElementById('welcome-screen');
-        const mainGame = document.getElementById('main-game');
-        const endScreen = document.getElementById('end-screen');
-        const progressScreen = document.getElementById('progress-screen');
-        
-        const subjectSelection = document.getElementById('subject-selection');
-        const quizTitleEl = document.getElementById('quiz-title');
-        const questionNumberEl = document.getElementById('question-number');
-        const scoreEl = document.getElementById('score');
-        const questionTextEl = document.getElementById('question-text');
-        const answerOptionsEl = document.getElementById('answer-options');
-        const finalScoreEl = document.getElementById('final-score');
-        const endMessageEl = document.getElementById('end-message');
-        
-        const skipBtn = document.getElementById('skip-btn');
-        const tipBtn = document.getElementById('tip-btn');
-        const lawBtn = document.getElementById('law-btn');
-        const modal = document.getElementById('modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalContent = document.getElementById('modal-content');
-        
-        const restartBtn = document.getElementById('restart-btn');
-        const progressBtn = document.getElementById('progress-btn');
-        const backFromProgressBtn = document.getElementById('back-from-progress-btn');
-        const backToMenuBtn = document.getElementById('back-to-menu-btn');
-        
-        let currentQuestionIndex = 0;
-        let score = 0;
-        let lifelines = {};
-        let activeQuestions = [];
-        let acceptingAnswers = true;
-        const TOTAL_QUESTIONS_PER_QUIZ = 15;
-        let progress = {};
-        let currentSubjectKey = '';
-
-        const consumerQuestionBank = [ { question: "De acordo com a Teoria do Desvio Produtivo, popularizada no STJ, a indenização por danos morais é cabível quando:", options: ["O produto apresenta um vício de fabricação", "O consumidor perde tempo vital para solucionar um problema criado pelo fornecedor", "A publicidade é considerada abusiva", "Ocorre um acidente de consumo com dano físico"], answer: "O consumidor perde tempo vital para solucionar um problema criado pelo fornecedor", tip: "Esta teoria valoriza o tempo como um bem jurídico e pune a ineficiência do fornecedor em resolver problemas.", law: "Jurisprudência do STJ (Ex: REsp 1.737.412/SE)" }, { question: "Em relação à responsabilidade civil de um marketplace por vício em produto vendido por um lojista parceiro (seller), a jurisprudência majoritária do STJ entende que:", options: ["A responsabilidade é exclusiva do lojista vendedor", "O marketplace não tem responsabilidade", "Há responsabilidade solidária do marketplace, pois integra a cadeia de fornecimento", "O marketplace só responde se receber uma notificação formal"], answer: "Há responsabilidade solidária do marketplace, pois integra a cadeia de fornecimento", tip: "Pense na Teoria da Aparência. Para o consumidor, quem está 'por trás' da venda?", law: "Arts. 7º, parágrafo único, 14 e 25, § 1º do CDC." }, { question: "A publicidade oculta ('stealth marketing'), realizada por influenciadores digitais que não identificam o conteúdo como 'publi', caracteriza qual ilícito consumerista?", options: ["Publicidade comparativa ilícita", "Publicidade enganosa por omissão", "Publicidade abusiva", "Venda casada"], answer: "Publicidade enganosa por omissão", tip: "O CDC exige que a publicidade seja veiculada de tal forma que o consumidor a identifique como tal.", law: "Art. 36 e 37, § 1° do CDC" }, { question: "A responsabilidade do profissional liberal por fato do serviço é uma exceção à regra geral do CDC. Sua natureza é:", options: ["Objetiva", "Integral", "Subjetiva, apurada mediante a verificação de culpa", "Solidária com o estabelecimento"], answer: "Subjetiva, apurada mediante a verificação de culpa", tip: "Enquanto empresas respondem objetivamente, para o profissional liberal é necessário provar que ele agiu com culpa.", law: "Art. 14, § 4° do CDC" }, { question: "Nos contratos de adesão, a inserção de cláusula resolutória por inadimplência do consumidor é:", options: ["Sempre permitida", "Nula de pleno direito", "Permitida, desde que alternativa, cabendo a escolha ao consumidor", "Permitida apenas com assinatura à parte"], answer: "Permitida, desde que alternativa, cabendo a escolha ao consumidor", tip: "A cláusula não pode prever a resolução automática. Deve dar ao consumidor a opção de manter o contrato ou rescindi-lo.", law: "Art. 54, § 2º c/c Art. 53 do CDC" }, { question: "A Teoria Finalista Mitigada, adotada pelo STJ, permite que uma pessoa jurídica seja consumidora quando:", options: ["Adquire qualquer produto para sua atividade", "É uma empresa de grande porte", "Demonstra vulnerabilidade (técnica, jurídica, econômica) frente ao fornecedor", "É uma sociedade de economia mista"], answer: "Demonstra sua vulnerabilidade (técnica, jurídica, econômica) frente ao fornecedor", tip: "Esta teoria flexibiliza o conceito de 'destinatário final' para proteger pequenas empresas em situações de desigualdade.", law: "Jurisprudência do STJ (Ex: REsp 1.195.642/RJ)" }, { question: "Qual das seguintes situações NÃO é excludente da responsabilidade civil do fornecedor pelo fato do produto?", options: ["Culpa exclusiva do consumidor ou de terceiro", "Não colocação do produto no mercado", "Caso fortuito ou força maior", "Inexistência do defeito"], answer: "Caso fortuito ou força maior", tip: "O risco do empreendimento abrange o caso fortuito interno (eventos ligados à atividade da empresa).", law: "Art. 12, § 3º do CDC" }, { question: "Sobre a inversão do ônus da prova ('ope judicis'), é correto afirmar que:", options: ["É um direito automático do consumidor", "Deve ser decretada na sentença", "É uma regra de instrução, devendo ser decidida antes da fase probatória", "Aplica-se apenas nos Juizados Especiais"], answer: "É uma regra de instrução, devendo ser decidida antes da fase probatória", tip: "A decisão sobre a inversão do ônus da prova é uma regra de procedimento, e não de julgamento.", law: "Art. 6º, VIII do CDC e Jurisprudência do STJ" }, { question: "Segundo a Súmula 543 do STJ, em caso de culpa exclusiva do vendedor/construtor na resolução de contrato de imóvel, a restituição das parcelas pagas deve ser:", options: ["Integral e imediata", "Parcial, com retenção de 25%", "Integral, mas parcelada", "Parcial, conforme o contrato"], answer: "Integral e imediata", tip: "Se a culpa é da construtora, não há por que penalizar o consumidor com qualquer retenção.", law: "Súmula 543 do STJ" }, { question: "O envio de cartão de crédito não solicitado, mesmo bloqueado, corresponde a qual entendimento sumulado?", options: ["Súmula 297 do STJ", "Súmula 385 do STJ", "Súmula 532 do STJ", "Súmula 381 do STJ"], answer: "Súmula 532 do STJ", tip: "Este entendimento pacificou que a simples remessa do cartão sem pedido prévio já constitui um ato ilícito passível de indenização.", law: "Súmula 532 do STJ" } ];
-        const penalQuestionBank = [ { question: "No que tange à teoria do crime, a adoção da teoria finalista da ação por Hans Welzel implicou em que alteração dogmática fundamental?", options: ["A transferência do dolo e da culpa da culpabilidade para o tipo penal", "A criação do conceito de tipicidade conglobante por Zaffaroni", "A consideração da imputabilidade como pressuposto da pena e não do crime", "A extinção da análise do nexo causal nos crimes materiais"], answer: "A transferência do dolo e da culpa da culpabilidade para o tipo penal", tip: "O finalismo entende que toda ação humana é finalística, ou seja, dirigida a um fim. Assim, o dolo (fim) é parte da própria ação típica.", law: "Doutrina Penal (Teoria Finalista)" }, { question: "A 'cegueira deliberada' (willful blindness ou teoria do avestruz), segundo o STF e o STJ, é aplicável para a caracterização de qual elemento do tipo penal?", options: ["Culpa consciente", "Erro de tipo inevitável", "Dolo eventual", "Estado de necessidade"], answer: "Dolo eventual", tip: "A teoria se aplica ao agente que, tendo a possibilidade de conhecer a ilicitude de sua conduta, deliberadamente se coloca em situação de ignorância para se beneficiar.", law: "Jurisprudência do STF e STJ (Ex: AP 470)" }, { question: "A prática de um crime de roubo com emprego de uma arma de brinquedo, segundo a Súmula 174 do STJ (cancelada), era considerada majorante. Qual o entendimento atual e pacífico do STJ sobre o tema?", options: ["Continua sendo causa de aumento de pena", "Configura apenas constrangimento ilegal", "Não incide a majorante do emprego de arma, mas a violência ou grave ameaça caracteriza o roubo simples", "O crime passa a ser de furto qualificado"], answer: "Não incide a majorante do emprego de arma, mas a violência ou grave ameaça caracteriza o roubo simples", tip: "O fundamento é que a arma de brinquedo não possui potencialidade lesiva real, não aumentando o risco ao bem jurídico.", law: "Jurisprudência do STJ (pós-cancelamento da Súmula 174)" }, { question: "O princípio da insignificância (ou bagatela) é causa de exclusão de qual elemento do crime?", options: ["Culpabilidade", "Ilicitude", "Punibilidade", "Tipicidade material"], answer: "Tipicidade material", tip: "Para o STF, a conduta, embora formalmente típica (descrita na lei), é materialmente atípica por não gerar lesão relevante ao bem jurídico tutelado.", law: "Jurisprudência do STF (HC 84.412)" }, { question: "No concurso de pessoas, a teoria adotada como regra pelo Código Penal brasileiro para a comunicabilidade das circunstâncias e elementares do crime é a:", options: ["Monista ou unitária", "Dualista", "Pluralista", "Teoria do domínio do fato"], answer: "Monista ou unitária", tip: "O Código Penal, em regra, estabelece que todos que concorrem para o crime incidem nas penas a ele cominadas, na medida de sua culpabilidade.", law: "Art. 29 do Código Penal" }, { question: "No sistema trifásico de dosimetria da pena de Nelson Hungria, a análise das agravantes e atenuantes ocorre em que fase?", options: ["Primeira fase (pena-base)", "Segunda fase", "Terceira fase (causas de aumento e diminuição)", "Na execução da pena"], answer: "Segunda fase", tip: "A sequência é: 1º circunstâncias judiciais; 2º agravantes e atenuantes; 3º causas de aumento e diminuição.", law: "Art. 68 do Código Penal" }, { question: "O que é o 'arrependimento eficaz'?", options: ["O agente se arrepende após a consumação do crime", "O agente, após iniciar a execução, impede que o resultado se produza", "O agente desiste voluntariamente de prosseguir na execução", "O agente repara o dano antes do recebimento da denúncia"], answer: "O agente, após iniciar a execução, impede que o resultado se produza", tip: "É diferente da desistência voluntária, pois aqui o agente esgota os atos executórios, mas age para evitar o resultado. Ele responde pelos atos já praticados.", law: "Art. 15 do Código Penal" }, { question: "A prática de um crime de homicídio por um policial militar em serviço, contra um civil, será julgada por qual órgão?", options: ["Tribunal do Júri da Justiça Estadual", "Justiça Militar da União", "Justiça Militar Estadual", "Tribunal de Justiça, sem júri"], answer: "Tribunal do Júri da Justiça Estadual", tip: "A Lei 13.491/17 alterou a competência, mas o STF reafirmou que crimes dolosos contra a vida de civil praticados por militar são da competência do Júri.", law: "Art. 9º, §1º do CPM e Jurisprudência do STF" } ];
-        const constitutionalQuestionBank = [ { question: "No âmbito do Controle de Constitucionalidade, qual o principal traço distintivo entre o sistema difuso e o sistema concentrado?", options: ["O momento do controle (preventivo ou repressivo)", "O órgão que exerce o controle (qualquer juiz ou um tribunal específico)", "A norma objeto de controle (lei federal ou estadual)", "O tipo de inconstitucionalidade (formal ou material)"], answer: "O órgão que exerce o controle (qualquer juiz ou um tribunal específico)", tip: "Pense em 'difuso' como espalhado por todo o Judiciário e 'concentrado' em um único órgão de cúpula.", law: "Doutrina Constitucional (Controle de Constitucionalidade)" }, { question: "O que é o fenômeno da 'mutação constitucional'?", options: ["Uma alteração formal do texto da Constituição por meio de Emenda", "A revisão total da Constituição por uma nova Assembleia Constituinte", "Uma alteração no sentido e alcance de uma norma constitucional sem alteração de seu texto, por meio da interpretação judicial", "A declaração de inconstitucionalidade de uma Emenda Constitucional"], answer: "Uma alteração no sentido e alcance de uma norma constitucional sem alteração de seu texto, por meio da interpretação judicial", tip: "É o texto que permanece, mas a interpretação se adapta à nova realidade social. O STF é o principal ator desse fenômeno.", law: "Doutrina Constitucional (Hermenêutica)" }, { question: "Qual a teoria sobre a aplicabilidade dos direitos fundamentais que o STF adota em relação aos particulares (eficácia horizontal dos direitos fundamentais)?", options: ["Teoria da ineficácia total", "Teoria da eficácia indireta ou mediata", "Teoria da eficácia direta ou imediata", "Teoria da ponderação de interesses"], answer: "Teoria da eficácia direta ou imediata", tip: "O STF entende que os direitos fundamentais não se aplicam apenas na relação Estado-cidadão, mas também nas relações privadas, embora com ponderações.", law: "Jurisprudência do STF (Ex: RE 201.819)" }, { question: "A técnica de decisão em controle de constitucionalidade conhecida como 'Interpretação Conforme a Constituição' consiste em:", options: ["Declarar a norma inconstitucional com efeitos para o futuro", "Declarar a norma parcialmente inconstitucional, sem redução de texto", "Escolher, dentre as várias interpretações possíveis de uma norma, aquela que a compatibilize com a Constituição", "Anular completamente a lei por vício de forma"], answer: "Escolher, dentre as várias interpretações possíveis de uma norma, aquela que a compatibilize com a Constituição", tip: "É uma forma de preservar a validade da norma, 'salvando-a' ao lhe dar um sentido que esteja de acordo com a Carta Magna.", law: "Doutrina e Prática do STF" }, { question: "Sobre as Comissões Parlamentares de Inquérito (CPIs), é correto afirmar que elas possuem 'poderes de investigação próprios das autoridades judiciais'. Qual poder, no entanto, NÃO lhes é conferido?", options: ["A quebra de sigilo bancário, fiscal e de dados", "A convocação de ministros de Estado para depor", "A determinação de busca e apreensão domiciliar", "A oitiva de testemunhas sob compromisso de dizer a verdade"], answer: "A determinação de busca e apreensão domiciliar", tip: "Atos que implicam em reserva de jurisdição (exigem ordem judicial) não podem ser praticados por CPIs, como a interceptação telefônica e a busca domiciliar.", law: "Art. 58, § 3º da CF/88 e Jurisprudência do STF" }, { question: "O que é uma 'norma constitucional de eficácia contida'?", options: ["Aquela que necessita de lei para produzir seus efeitos", "Aquela que produz todos os seus efeitos desde o início, mas pode ter seu alcance restringido por lei posterior", "Aquela que não pode ser alterada por Emenda Constitucional", "Aquela que só se aplica aos entes da federação"], answer: "Aquela que produz todos os seus efeitos desde o início, mas pode ter seu alcance restringido por lei posterior", tip: "Ela tem aplicabilidade imediata e plena, mas o legislador ordinário pode 'conter' seus efeitos. Ex: direito de exercício profissional.", law: "Doutrina de José Afonso da Silva" }, { question: "No sistema brasileiro, a Arguição de Descumprimento de Preceito Fundamental (ADPF) possui caráter:", options: ["Principal, podendo ser ajuizada a qualquer tempo", "Subsidiário, cabível apenas quando não houver outro meio eficaz de sanar a lesividade", "Preventivo, apenas antes da publicação da lei", "Repressivo, apenas para leis federais"], answer: "Subsidiário, cabível apenas quando não houver outro meio eficaz de sanar a lesividade", tip: "A ADPF funciona como uma 'ação de fechamento' do sistema de controle concentrado, para situações não cobertas pela ADI ou ADC.", law: "Art. 4º, § 1º da Lei 9.882/99" }, { question: "Qual dos seguintes direitos NÃO é considerado uma cláusula pétrea explícita, conforme o Art. 60, § 4º da CF/88?", options: ["A forma federativa de Estado", "O voto direto, secreto, universal e periódico", "A separação dos Poderes", "A garantia do mandado de injunção"], answer: "A garantia do mandado de injunção", tip: "Embora seja um direito fundamental importante, o mandado de injunção não está listado no rol explícito do poder constituinte derivado reformador.", law: "Art. 60, § 4º da CF/88" } ];
-        
-        const questionBanks = {
-            consumer: consumerQuestionBank,
-            penal: penalQuestionBank,
-            constitutional: constitutionalQuestionBank
-        };
-        let currentSubjectBank = [];
-
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
-        
-        function selectSubject(subjectKey) {
-            welcomeScreen.classList.add('hidden');
-            mainGame.classList.remove('hidden');
-            
-            currentSubjectKey = subjectKey;
-
-            const titles = {
-                consumer: 'Direito do Consumidor',
-                penal: 'Direito Penal',
-                constitutional: 'Direito Constitucional'
-            };
-            quizTitleEl.textContent = titles[subjectKey];
-
-            currentSubjectBank = questionBanks[subjectKey];
-            startGame();
-        }
-
-        function startGame() {
-            endScreen.classList.add('hidden');
-            
-            score = 0;
-            currentQuestionIndex = 0;
-            lifelines = { skip: 1, tip: 1, law: 1 };
-            acceptingAnswers = true;
-            
-            updateLifelineButtons();
-            
-            shuffleArray(currentSubjectBank);
-            activeQuestions = currentSubjectBank.slice(0, TOTAL_QUESTIONS_PER_QUIZ);
-            
-            loadQuestion();
-        }
-        
-        function loadQuestion() {
-            if (currentQuestionIndex >= TOTAL_QUESTIONS_PER_QUIZ) {
-                endGame();
-                return;
-            }
-
-            acceptingAnswers = true;
-            const currentQuestion = activeQuestions[currentQuestionIndex];
-            
-            questionNumberEl.textContent = currentQuestionIndex + 1;
-            scoreEl.textContent = score;
-            questionTextEl.textContent = currentQuestion.question;
-            
-            answerOptionsEl.innerHTML = "";
-            answerOptionsEl.style.pointerEvents = 'none'; // Bug fix
-            const shuffledOptions = [...currentQuestion.options];
-            shuffleArray(shuffledOptions);
-
-            shuffledOptions.forEach(option => {
-                const button = document.createElement('button');
-                button.textContent = option;
-                button.className = "answer-option text-left p-4 rounded-lg bg-gray-100 text-gray-700 font-semibold";
-                button.onclick = () => selectAnswer(button, option);
-                answerOptionsEl.appendChild(button);
-            });
-
-            setTimeout(() => {
-                answerOptionsEl.style.pointerEvents = 'auto'; // Bug fix
-            }, 100);
-        }
-        
-        function selectAnswer(button, selectedOption) {
-            if (!acceptingAnswers) return;
-            acceptingAnswers = false;
-
-            button.classList.add('selected');
-            const currentQuestion = activeQuestions[currentQuestionIndex];
-            const isCorrect = selectedOption === currentQuestion.answer;
-            
-            updateAndSaveProgress(isCorrect);
-
-            if (isCorrect) {
-                score++;
-                button.classList.add('correct');
-            } else {
-                button.classList.add('incorrect');
-                Array.from(answerOptionsEl.children).forEach(btn => {
-                    if (btn.textContent === currentQuestion.answer) {
-                        btn.classList.add('correct');
-                    }
-                });
-            }
-            
-            setTimeout(() => {
-                currentQuestionIndex++;
-                loadQuestion();
-            }, 2500);
-        }
-
-        function updateLifelineButtons() {
-            skipBtn.disabled = lifelines.skip === 0;
-            tipBtn.disabled = lifelines.tip === 0;
-            lawBtn.disabled = lifelines.law === 0;
-            skipBtn.textContent = `Pular (${lifelines.skip})`;
-            tipBtn.textContent = `Dica de Ouro${lifelines.tip === 0 ? ' (Usada)' : ''}`;
-            lawBtn.textContent = `Na Letra da Lei${lifelines.law === 0 ? ' (Usada)' : ''}`;
-        }
-
-        function useSkip() {
-            if (lifelines.skip > 0) {
-                lifelines.skip = 0;
-                updateLifelineButtons();
-                currentQuestionIndex++;
-                loadQuestion();
-            }
-        }
-
-        function useGoldenTip() {
-            if (lifelines.tip > 0) {
-                lifelines.tip = 0;
-                updateLifelineButtons();
-                const currentQuestion = activeQuestions[currentQuestionIndex];
-                modalTitle.textContent = "Dica de Ouro";
-                modalContent.textContent = currentQuestion.tip;
-                modal.classList.remove('hidden');
-            }
-        }
-
-        function useLawText() {
-            if (lifelines.law > 0) {
-                lifelines.law = 0;
-                updateLifelineButtons();
-                const currentQuestion = activeQuestions[currentQuestionIndex];
-                modalTitle.textContent = "Na Letra da Lei";
-                modalContent.textContent = `Consulte: ${currentQuestion.law}`;
-                modal.classList.remove('hidden');
-            }
-        }
-
-        function closeModal() {
-            modal.classList.add('hidden');
-        }
-        window.closeModal = closeModal;
-
-        function endGame() {
-            mainGame.classList.add('hidden');
-            endScreen.classList.remove('hidden');
-            
-            finalScoreEl.textContent = score;
-            const percentage = (score / TOTAL_QUESTIONS_PER_QUIZ) * 100;
-            if (percentage >= 70) {
-                endMessageEl.textContent = "Excelente desempenho! Você demonstrou profundo conhecimento da matéria. Parabéns!";
-            } else if (percentage >= 50) {
-                endMessageEl.textContent = "Bom resultado! Você está no caminho certo. Foque na revisão das jurisprudências e exceções.";
-            } else {
-                 endMessageEl.textContent = "Não desanime! As questões são complexas. A revisão constante levará à maestria.";
-            }
-        }
-        
-        function updateAndSaveProgress(isCorrect) {
-            if (!currentSubjectKey) return;
-            const subjectProgress = progress[currentSubjectKey] || { correct: 0, total: 0 };
-            
-            subjectProgress.total += 1; // Always increment total questions attempted
-            if (isCorrect) {
-                subjectProgress.correct += 1;
-            }
-            
-            progress[currentSubjectKey] = subjectProgress;
-            localStorage.setItem('oabProgress', JSON.stringify(progress));
-        }
-
-        function loadProgress() {
-            const savedProgress = localStorage.getItem('oabProgress');
-            if (savedProgress) {
-                progress = JSON.parse(savedProgress);
-            } else {
-                progress = {};
-            }
-        }
-        
-        function displayProgress() {
-            welcomeScreen.classList.add('hidden');
-            progressScreen.classList.remove('hidden');
-            const statsEl = document.getElementById('progress-stats');
-            statsEl.innerHTML = '';
-            
-            const subjects = {
-                consumer: 'Direito do Consumidor',
-                penal: 'Direito Penal',
-                constitutional: 'Direito Constitucional'
-            };
-
-            for (const key in subjects) {
-                const subjectName = subjects[key];
-                const data = progress[key];
-                const statEl = document.createElement('div');
-                statEl.className = 'bg-gray-100 p-4 rounded-lg';
-                
-                if (data && data.total > 0) {
-                    const percentage = ((data.correct / data.total) * 100).toFixed(1);
-                    statEl.innerHTML = `
-                        <h3 class="text-xl font-bold text-gray-800">${subjectName}</h3>
-                        <p class="text-lg">Desempenho Geral: <span class="font-bold">${data.correct} / ${data.total} questões</span></p>
-                        <p class="text-2xl font-bold text-blue-700">${percentage}% de acerto</p>
-                    `;
-                } else {
-                    statEl.innerHTML = `
-                        <h3 class="text-xl font-bold text-gray-800">${subjectName}</h3>
-                        <p class="text-lg text-gray-500">Nenhum quiz concluído nesta matéria.</p>
-                    `;
-                }
-                statsEl.appendChild(statEl);
-            }
-        }
-        
-        function showWelcomeScreen() {
-            welcomeScreen.classList.remove('hidden');
-            mainGame.classList.add('hidden');
-            endScreen.classList.add('hidden');
-            progressScreen.classList.add('hidden');
-        }
-
-        // Event Listeners
-        subjectSelection.addEventListener('click', (e) => {
-            if (e.target.matches('.subject-btn')) {
-                selectSubject(e.target.dataset.subject);
-            }
-        });
-        
-        progressBtn.addEventListener('click', displayProgress);
-        backFromProgressBtn.addEventListener('click', showWelcomeScreen);
-        backToMenuBtn.addEventListener('click', showWelcomeScreen);
-        restartBtn.addEventListener('click', showWelcomeScreen);
-
-        // Initial Load
-        loadProgress();
-    });
-    </script>
-</body>
-</html>
+  );
+}
