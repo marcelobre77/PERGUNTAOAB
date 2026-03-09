@@ -3,488 +3,785 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>De Quem é a Competência?</title>
-    <!-- Tailwind CSS para Estilização -->
+    <title>Quem Criou? - História do Direito</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React e ReactDOM para a lógica -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <!-- Babel para compilar o JSX direto no navegador -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
     <style>
-        body { margin: 0; padding: 0; background-color: #f1f5f9; }
+        /* Estilos personalizados de Scrollbar e Animações */
+        .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background-color: #8b5a2b; border-radius: 20px; }
+        
+        /* Oculta as setas do input type number */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
+        /* Animações Nativas para os Modais */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes zoomIn { from { transform: scale(0.9) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+        
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        .animate-zoom-in { animation: zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
     </style>
 </head>
-<body>
+<body class="bg-stone-900 text-stone-200 font-serif overflow-hidden">
+    
+    <!-- Contêiner Principal da Aplicação -->
     <div id="root"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+    <script>
+        // ==========================================
+        // CATÁLOGO SEPARADO PARA EMBARALHAMENTO PERFEITO
+        // ==========================================
 
-        // --- ÍCONES (Convertidos de Lucide-React para SVG nativo para funcionar sem dependências) ---
-        const Trash2 = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>;
-        const Package = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>;
-        const CheckCircle = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>;
-        const XCircle = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>;
-        const RotateCcw = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>;
-        const Trophy = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>;
-        const Users = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>;
-        const Plus = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
-        const Minus = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
-        const BookOpen = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>;
-        const ArrowRight = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>;
-
-        // --- BANCO DE DADOS ---
-        const COMPETENCIAS = [
-          // UNIÃO
-          { texto: "Declarar a guerra e celebrar a paz", resposta: "União", fundamento: "Art. 21, II, CF" },
-          { texto: "Emitir moeda", resposta: "União", fundamento: "Art. 21, III, CF" },
-          { texto: "Administrar as reservas cambiais do País", resposta: "União", fundamento: "Art. 21, IV, CF" },
-          { texto: "Manter o serviço postal e o correio aéreo nacional", resposta: "União", fundamento: "Art. 21, X, CF" },
-          { texto: "Explorar os serviços e instalações nucleares de qualquer natureza", resposta: "União", fundamento: "Art. 21, XXIII, CF" },
-          { texto: "Organizar e manter a polícia federal, a rodoviária e a ferroviária", resposta: "União", fundamento: "Art. 21, XIV, CF" },
-          { texto: "Conceder anistia", resposta: "União", fundamento: "Art. 21, XVII, CF" },
-          { texto: "Legislar sobre direito civil, comercial, penal, processual e do trabalho", resposta: "União", fundamento: "Art. 22, I, CF" },
-          { texto: "Legislar sobre desapropriação", resposta: "União", fundamento: "Art. 22, II, CF" },
-          { texto: "Legislar sobre requisições civis e militares", resposta: "União", fundamento: "Art. 22, III, CF" },
-          { texto: "Legislar sobre águas, energia, informática, telecomunicações e radiodifusão", resposta: "União", fundamento: "Art. 22, IV, CF" },
-          { texto: "Legislar sobre serviço postal", resposta: "União", fundamento: "Art. 22, V, CF" },
-          { texto: "Legislar sobre sistema monetário e de medidas", resposta: "União", fundamento: "Art. 22, VI, CF" },
-          { texto: "Legislar sobre política de crédito, câmbio e seguros", resposta: "União", fundamento: "Art. 22, VII, CF" },
-          { texto: "Legislar sobre comércio exterior e interestadual", resposta: "União", fundamento: "Art. 22, VIII, CF" },
-          { texto: "Legislar sobre diretrizes da política nacional de transportes", resposta: "União", fundamento: "Art. 22, IX, CF" },
-          { texto: "Legislar sobre jazidas, minas e outros recursos minerais", resposta: "União", fundamento: "Art. 22, XII, CF" },
-          { texto: "Legislar sobre nacionalidade, cidadania e naturalização", resposta: "União", fundamento: "Art. 22, XIII, CF" },
-          { texto: "Legislar sobre populações indígenas", resposta: "União", fundamento: "Art. 22, XIV, CF" },
-          { texto: "Autorizar e fiscalizar a produção e o comércio de material bélico", resposta: "União", fundamento: "Art. 21, VI, CF" },
-
-          // ESTADO
-          { texto: "Explorar diretamente, ou mediante concessão, os serviços locais de gás canalizado", resposta: "Estado", fundamento: "Art. 25, § 2º, CF" },
-          { texto: "Instituir regiões metropolitanas, aglomerações urbanas e microrregiões", resposta: "Estado", fundamento: "Art. 25, § 3º, CF" },
-          { texto: "Exercer as competências que não lhes sejam vedadas (Competência Residual)", resposta: "Estado", fundamento: "Art. 25, § 1º, CF" },
-          { texto: "Legislar concorrentemente (junto com a União e o DF) sobre direito tributário, financeiro e penitenciário", resposta: "Estado", fundamento: "Art. 24, I, CF" },
-          { texto: "Legislar concorrentemente (junto com a União e o DF) sobre orçamento", resposta: "Estado", fundamento: "Art. 24, II, CF" },
-          { texto: "Legislar concorrentemente (junto com a União e o DF) sobre juntas comerciais", resposta: "Estado", fundamento: "Art. 24, III, CF" },
-          { texto: "Legislar concorrentemente (junto com a União e o DF) sobre custas dos serviços forenses", resposta: "Estado", fundamento: "Art. 24, IV, CF" },
-          { texto: "Legislar concorrentemente (junto com a União e o DF) sobre produção e consumo", resposta: "Estado", fundamento: "Art. 24, V, CF" },
-          { texto: "Legislar concorrentemente (junto com a União e o DF) sobre florestas, caça, pesca e fauna", resposta: "Estado", fundamento: "Art. 24, VI, CF" },
-          { texto: "Legislar concorrentemente (junto com a União e o DF) sobre proteção ao patrimônio histórico e cultural", resposta: "Estado", fundamento: "Art. 24, VII, CF" },
-          { texto: "Legislar concorrentemente (junto com a União e o DF) sobre responsabilidade por dano ao meio ambiente", resposta: "Estado", fundamento: "Art. 24, VIII, CF" },
-          { texto: "Legislar concorrentemente (junto com a União e o DF) sobre educação, cultura, ensino e desporto", resposta: "Estado", fundamento: "Art. 24, IX, CF" },
-          { texto: "Legislar concorrentemente (junto com a União e o DF) sobre criação do juizado de pequenas causas", resposta: "Estado", fundamento: "Art. 24, X, CF" },
-          { texto: "Legislar concorrentemente (junto com a União e o DF) sobre procedimentos em matéria processual", resposta: "Estado", fundamento: "Art. 24, XI, CF" },
-          { texto: "Legislar concorrentemente (junto com a União e o DF) sobre previdência social e defesa da saúde", resposta: "Estado", fundamento: "Art. 24, XII, CF" },
-          { texto: "Legislar concorrentemente (junto com a União e o DF) sobre assistência jurídica e Defensoria pública", resposta: "Estado", fundamento: "Art. 24, XIII, CF" },
-          { texto: "Legislar concorrentemente (junto com a União e o DF) sobre integração social de pessoas com deficiência", resposta: "Estado", fundamento: "Art. 24, XIV, CF" },
-          { texto: "Legislar concorrentemente (junto com a União e o DF) sobre proteção à infância e à juventude", resposta: "Estado", fundamento: "Art. 24, XV, CF" },
-          { texto: "Legislar concorrentemente (junto com a União e o DF) sobre organização, garantias e direitos das polícias civis", resposta: "Estado", fundamento: "Art. 24, XVI, CF" },
-          { texto: "Exercer competência legislativa plena inexistindo lei federal sobre normas gerais", resposta: "Estado", fundamento: "Art. 24, § 3º, CF" },
-
-          // MUNICÍPIO
-          { texto: "Legislar sobre assuntos de interesse local", resposta: "Município", fundamento: "Art. 30, I, CF" },
-          { texto: "Suplementar a legislação federal e a estadual no que couber", resposta: "Município", fundamento: "Art. 30, II, CF" },
-          { texto: "Instituir e arrecadar os tributos de sua competência e aplicar suas rendas", resposta: "Município", fundamento: "Art. 30, III, CF" },
-          { texto: "Criar, organizar e suprimir distritos, observada a legislação estadual", resposta: "Município", fundamento: "Art. 30, IV, CF" },
-          { texto: "Organizar e prestar os serviços públicos de interesse local", resposta: "Município", fundamento: "Art. 30, V, CF" },
-          { texto: "Organizar e prestar o serviço de transporte coletivo municipal", resposta: "Município", fundamento: "Art. 30, V, CF" },
-          { texto: "Manter programas de educação infantil e de ensino fundamental", resposta: "Município", fundamento: "Art. 30, VI, CF" },
-          { texto: "Prestar serviços de atendimento à saúde da população local", resposta: "Município", fundamento: "Art. 30, VII, CF" },
-          { texto: "Promover o adequado ordenamento territorial e controle do uso do solo", resposta: "Município", fundamento: "Art. 30, VIII, CF" },
-          { texto: "Promover a proteção do patrimônio histórico-cultural local", resposta: "Município", fundamento: "Art. 30, IX, CF" },
-          { texto: "Fixar o horário de funcionamento de estabelecimento comercial local", resposta: "Município", fundamento: "Súmula Vinculante 38 (c/c Art. 30, I, CF)" },
-          { texto: "Instituir guarda municipal para proteção de seus bens, serviços e instalações", resposta: "Município", fundamento: "Art. 144, § 8º, CF" },
-          { texto: "Executar a política de desenvolvimento urbano municipal", resposta: "Município", fundamento: "Art. 182, caput, CF" },
-          { texto: "Exigir do proprietário do solo urbano não edificado o adequado aproveitamento", resposta: "Município", fundamento: "Art. 182, § 4º, CF" },
-          { texto: "Aprovar o plano diretor (obrigatório para cidades com mais de 20 mil habitantes)", resposta: "Município", fundamento: "Art. 182, § 1º, CF" },
-          { texto: "Promover a desapropriação de área urbana por interesse social para reforma urbana", resposta: "Município", fundamento: "Art. 182, § 4º, III, CF" },
-          { texto: "Regulamentar o serviço de táxi e transporte por aplicativos no âmbito local", resposta: "Município", fundamento: "Art. 30, I e V, CF (Jurisprudência)" },
-          { texto: "Cuidar da limpeza urbana e do manejo de resíduos sólidos em seu território", resposta: "Município", fundamento: "Art. 30, V, CF" },
-          { texto: "Conceder e renovar licença de localização e funcionamento para o comércio local", resposta: "Município", fundamento: "Art. 30, I, CF" },
-          { texto: "Sinalizar as vias urbanas e regulamentar o trânsito local", resposta: "Município", fundamento: "Art. 30, I, CF" }
+        const ROMAN = [
+          ["Lei das 12 Tábuas", "Primeiro código de leis escritas desta civilização, que fixou costumes antigos em doze placas de bronze."],
+          ["Corpus Juris Civilis", "Compilação monumental de leis e jurisprudência clássica encomendada por um imperador no século VI."],
+          ["Institutas de Gaio", "Manual didático clássico para estudantes de direito, dividido em Pessoas, Coisas e Ações."],
+          ["Digesto (Pandectas)", "Obra colossal que compilou os fragmentos e as opiniões dos maiores juristas clássicos em 50 livros."],
+          ["Código de Justiniano", "Reunião de todas as constituições imperiais (leis dos imperadores) válidas em um único livro."],
+          ["Ius Gentium", "Conjunto de normas aplicáveis aos estrangeiros e às relações comerciais internacionais da época."],
+          ["Ius Civile", "Conjunto de normas exclusivas, formalistas e estritas, aplicáveis apenas aos cidadãos originários."],
+          ["Ius Honorarium", "Direito criado pelos magistrados nos tribunais para suprir, ajudar ou corrigir o direito tradicional rígido."],
+          ["Pretor", "Magistrado responsável por administrar a justiça e que publicava um édito anual com as fórmulas de ação judiciais."],
+          ["Lex Hortensia", "Lei que determinou que as decisões tomadas pela assembleia popular teriam força de lei para toda a sociedade."],
+          ["Lex Canuleia", "Lei que aboliu a antiga proibição de casamento entre classes sociais diferentes (elite e plebe)."],
+          ["Lex Aquilia", "Lei fundamental que regulamentou o dano patrimonial, formando a base histórica da moderna responsabilidade civil."],
+          ["Lex Poetelia Papiria", "Lei histórica que proibiu de vez a antiga prática da escravidão por dívidas de cidadãos."],
+          ["Ulpiano", "Famoso jurista clássico que definiu a justiça como 'dar a cada um o que é seu'."],
+          ["Papiniano", "Considerado o maior de todos os juristas de sua época, conhecido como o 'príncipe dos jurisconsultos'."],
+          ["Paulo", "Eminente jurisconsulto clássico, cujos escritos vastos formaram cerca de um sexto do principal código da época."],
+          ["Modestino", "Último dos grandes juristas clássicos formadores de opinião, cujos conselhos tinham peso de lei nos tribunais."],
+          ["Triboniano", "Ministro e gênio jurídico que chefiou a comissão encarregada de compilar todo o direito do império."],
+          ["Patria Potestas", "Poder absoluto e vitalício do chefe da família sobre os filhos, incluindo originalmente direito de vida e morte."],
+          ["Manus", "Poder jurídico e autoridade que o marido exercia sobre a esposa no regime de casamento mais rigoroso e antigo."],
+          ["Mancipatio", "Contrato formal e solene de transferência de propriedade usando testemunhas, uma balança e um pedaço de bronze."],
+          ["In iure cessio", "Transferência de propriedade feita estrategicamente através de um processo judicial simulado diante do magistrado."],
+          ["Usucapio", "Aquisição da propriedade pelo uso prolongado e ininterrupto da coisa no tempo estipulado pela lei."],
+          ["Traditio", "Transferência simples de propriedade baseada apenas pela entrega física (tradição) da coisa com justa causa."],
+          ["Stipulatio", "Contrato verbal estrito formado por uma pergunta solene de uma parte e uma resposta imediata congruente da outra."],
+          ["Mutuum", "Empréstimo de coisas consumíveis (como dinheiro ou vinho) que deviam ser devolvidas na mesma espécie e quantidade."],
+          ["Emptio Venditio", "Contrato puramente consensual de troca de uma coisa qualquer por um preço estipulado em dinheiro."],
+          ["Locatio Conductio", "Contrato consensual genérico utilizado para arrendamento de coisas, prestação de serviços ou execução de obras."],
+          ["Societas", "Contrato pelo qual duas ou mais pessoas se unem para alcançar um fim econômico comum, dividindo lucros e perdas."],
+          ["Mandatum", "Contrato gratuito pelo qual alguém se obriga formalmente a realizar um ato jurídico no interesse de outra pessoa."],
+          ["Furtum", "Delito privado focado na subtração fraudulenta de coisa alheia móvel com a intenção clara de obter lucro financeiro."],
+          ["Rapina", "Delito grave de subtração de bens alheios cometida especificamente com uso de violência armada ou quadrilha/bando."],
+          ["Iniuria", "Delito que englobava qualquer ofensa física ou moral não fatal à pessoa livre, gerando obrigação de pagar indenização."],
+          ["Senatusconsultum", "Decisão com força normativa emanada do principal conselho de senhores aristocratas do Estado."],
+          ["Constituições Imperiais", "Normas criadas diretamente pelo governante supremo em forma de editos, mandatos, decretos ou resciptos."],
+          ["Édito Perpétuo", "Consolidação definitiva feita no século II de todas as fórmulas e ações judiciais dos magistrados em um texto imutável."],
+          ["Responsa Prudentium", "Respostas e pareceres técnicos dados pelos sábios estudiosos do direito que, se unânimes, recebiam força de lei do governante."],
+          ["Legis Actiones", "Fase mais antiga e ritualística do processo judicial, baseada em gestos rigorosos e palavras orais imutáveis sob pena de anulação."],
+          ["Processo Formular", "Sistema processual clássico onde o magistrado redigia um documento escrito flexível instruindo o juiz sobre como condenar ou absolver."],
+          ["Cognitio Extra Ordinem", "Processo judicial extraordinário de fase única, conduzido e julgado diretamente do início ao fim por um único funcionário do Estado."],
+          ["Interdicta", "Ordens administrativas urgentes emitidas pelo magistrado para proteger a posse de alguém contra perturbações violentas de terceiros."],
+          ["Restitutio in integrum", "Medida processual extrema do magistrado que anulava os efeitos de um ato jurídico válido para evitar uma grande injustiça social."],
+          ["Missio in possessionem", "Ato coercitivo do magistrado que autorizava oficialmente um credor a tomar posse dos bens de um devedor considerado insolvente."],
+          ["Novelas", "Novas leis ou adições jurídicas publicadas esporadicamente pelo governante após a conclusão da grande compilação oficial de seu governo."],
+          ["Pecúlio", "Pequena quantidade tolerada de bens ou dinheiro que o chefe de família permitia que seus dependentes (filhos ou escravos) administrassem livremente."],
+          ["Lex Julia de Adulteriis", "Primeira lei do império que criminalizou legalmente a infidelidade conjugal feminina como um crime de Estado punível severamente com exílio e confisco."],
+          ["Fideicomisso", "Disposição de última vontade feita de maneira informal, baseada puramente na confiança de que o herdeiro principal a cumpriria em favor de terceiros."],
+          ["Ação Pauliana", "Ação judicial engenhosa criada para permitir revogar negócios e doações de devedores que esvaziavam seu patrimônio para fraudar credores."],
+          ["Superfície", "Direito real alienável e transmissível aos herdeiros de construir, plantar e manter estruturas sobre o terreno que era de propriedade de outra pessoa."],
+          ["Enfiteuse", "Direito real amplo e perpétuo (ou de muito longo prazo) focado no uso, gozo e cultivo de terras agrícolas não cultivadas pertencentes a terceiros ou ao Estado."]
         ];
 
-        const shuffleArray = (array) => {
-          const newArr = [...array];
-          for (let i = newArr.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
-          }
-          return newArr;
-        };
+        const GREEK = [
+          ["Leis de Drácon", "Primeiro código de leis escritas desta sociedade, célebre na história por punir quase todos os pequenos crimes com a pena de morte."],
+          ["Reformas de Sólon", "Reformas jurídicas profundas que reclassificaram os cidadãos por faixas de riqueza e produção agrícola, e não por linhagem de nascimento sanguíneo."],
+          ["Seisachtheia", "Decreto legal histórico de perdão e expurgo que cancelou todas as dívidas agrícolas do Estado e libertou todos que haviam sido escravizados por inadimplência."],
+          ["Reformas de Clístenes", "Mudança constitucional radical que reorganizou o território do Estado em tribos mistas locais, fundando a base estrutural para um verdadeiro sistema democrático participativo."],
+          ["Ostracismo", "Punição preventiva e votada coletivamente que exilava líderes perigosos ou ditatoriais por 10 anos, utilizando cédulas em pedaços de cerâmica gravada."],
+          ["Grande Rhetra", "A constituição rígida, oral e de caráter focado na eugenia e táticas militares de uma importante cidade-estado, supostamente recebida em ditado direto de um oráculo."],
+          ["Areópago", "O mais antigo, venerável e restrito conselho aristocrático do Estado, que na época clássica ficou reservado exclusivamente para julgar crimes de homicídios dolosos e incêndios intencionais."],
+          ["Helieu", "Imenso tribunal popular supremo para casos gerais, composto por milhares de cidadãos civis sem formação legal que eram sorteados anualmente para atuar no plenário como juízes/jurados."],
+          ["Efetas", "Tribunal criminal especializado composto por 51 juízes específicos que lidavam primariamente com julgamentos sensíveis sobre casos de homicídios culposos (involuntários) e derramamentos de sangue."],
+          ["Isonomia", "Princípio jurídico, legal e político fundamental desta cultura democrática antiga que garantia estrita e teoricamente a igualdade de direito de todos os cidadãos masculinos perante a lei escrita."],
+          ["Isegoria", "Direito sagrado, inviolável e protegido por lei que garantia que qualquer cidadão apto, rico ou pobre, tomasse a palavra e discursasse com imunidade perante a assembleia das multidões."],
+          ["Isocracia", "Princípio estruturante de poder legal e igualdade que atestava formalmente a todos os cidadãos plenos o mesmíssimo direito político de acesso e concorrência para assumir os cargos da magistratura e justiça."],
+          ["Nomos", "Conceito filosófico e jurídico que definia especificamente a 'lei escrita', aquela criada de forma mutável pela convenção e voto humano, em contraste à imutabilidade da natureza eterna."],
+          ["Themis", "Conceito místico-legal primordial de justiça divina e ordem harmônica inabalável do cosmos, um ordenamento supremo que antecede, julga e inspira as leis falhas criadas pelos homens nas praças."],
+          ["Graphe Paranomon", "Ação processual criminal e pública de altíssima gravidade que podia ser movida contra qualquer legislador que propusesse projetos de lei considerados inconstitucionais, imorais ou lesivos ao arcabouço da democracia estabelecida."],
+          ["Eisangelia", "Um procedimento penal e criminal de absoluta urgência e exceção invocado diretamente e de surpresa contra grandes magistrados sob acusações pesadas como suborno gravíssimo, alta traição ou ameaça armada de derrubada do Estado e suas leis."],
+          ["Dokimasia", "Audiência rigorosa na forma de um escrutínio ou exame legal de conduta moral, deveres filiais, cumprimento militar e histórico financeiro pelo qual um cidadão era submetido antes de obter autorização para assumir seu cargo na magistratura."],
+          ["Euthyna", "Processo contábil legal e procedimento obrigatório de prestação minuciosa de contas financeiras pelo qual todo o cidadão que ocupou cargo de magistrado ou tesoureiro passava, sendo retido na praça até o encerramento do seu curto mandato sem pendências para evitar peculato continuado."],
+          ["Sicofanta", "Termo jurídico amplamente pejorativo dado aos delatores ardilosos ou acusadores processuais profissionais que, usando o sistema público de denúncias, abriam frequentemente processos cíveis ou penais intimidadores contra aristocratas apenas com a finalidade de extorquir dinheiro com acordos ilícitos pré-julgamento."],
+          ["Logógrafo", "Profissional erudito e jurista primitivo altamente contratado não para falar pelos clientes nas cortes orais, mas que exercia o labor exclusivo de redigir discursos jurídicos envolventes, repletos de emoção retórica e argumentação legal persuasiva, para que as próprias partes os memorizassem e declamassem perante os tribunais."],
+          ["Dike", "Categoria jurídica abrangendo qualquer ação judicial ou pleito puramente de caráter e natureza privados (como dívidas, furtos, danos e agressões leves) a qual só possuía validade e legitimidade processual para ser ajuizada ativamente perante os juízes sendo interposta pelas mãos da própria e direta vítima ofendida ou seus consanguíneos herdeiros na esfera cível."],
+          ["Graphe", "Designação das ações processuais civis de natureza ampla, difusa ou pública e que por isso abarcava a permissão democrática especial de que seu processamento pudesse ser demandado por qualquer cidadão habilitado atuando de forma voluntária em nome do interesse tutelado em proteção dos bens da cidade como um todo coletivo."],
+          ["Diaitetai", "Instância de resolução civil exercida por cidadãos respeitáveis compulsoriamente aos sessenta anos completos funcionando como árbitros públicos pacíficos e com a função prévia à fase de mérito para evitar acúmulos de processos forçando conciliações e homologando consensos em litígios cíveis sem gravidade perante audiências em locais sacros da polis."],
+          ["Lei de Gortina", "Considerado um dos mais longos textos contínuos inscritos da antiguidade europeia, formava um enorme bloco nas paredes rurais preservado contendo preceitos sobre heranças escravos doações prevendo avançadíssimo benefício com diretos plenos femininos onde as posses herdadas ou de bens próprios das mulheres ficavam juridicamente a salvo do marido no matrimônio e também inalienáveis após ocorrências formais dos divórcios."],
+          ["Epíclera", "A figura jurídica singular da filha herdeira restando órfã sem quaisquer outros irmãos varões biológicos aptos à sucessão para a herança familiar sendo por determinação obrigatória deste instituto do direito dinástico familiar prometida casar compulsoriamente seu leito ao mais velho e próximo familiar colateral (tio ou primo da estirpe paterna) tendo somente em meta reter perenemente todo o patrimônio para a oikos originário dos ancestrais do falecido guardião evitando a dispersão dos bens de herança à terceiros alheios de outra prole estranha do marido a escolha na linha patriarcal sucessória."],
+          ["Metoikion", "Estatuto legal com forte traço discriminatório com a instituição de tributação anual captação fiscal punitiva fixando e exigindo imposto financeiro pesado compulsório para todo os que portassem estatuto formal migratório aos domiciliados desprovidos pela ancestralidade das linhagens sagradas não tendo por isso voz ou direitos não nascidos em seu raio geográfico da polis."],
+          ["Átimo", "Condição legal deplorável recaída na modalidade infame por transgressões punitivas aos delitos que esgotavam totalmente o estado civil varrendo sumariamente e transformando perpetuamente num mero espectro sem diretos destituindo quaisquer cidadãos das outorgas sociais cívicas impedindo atuações assembleares atuar judicialmente ou participar nas oferendas cultuais da polis relegando-o às sombras dos estigmas na comunidade como um infame incurável no meio em que reside na prática social local."],
+          ["Sizígia", "Regime legal peculiar matrimonial focado nas proles militares do exército que substituía casamentos contratuais burgueses para o pareamento estatal puramente direcionado às necessidades procriacionais admitindo as relações e as tolerâncias poligâmicas das procriações no círculo comunal entre mulheres sadias compartilhadas temporariamente com jovens soldados robustos vislumbrando nutrir os rebanhos do quartel da polis fortalecendo a milícia em suas trincheiras sem focar posses de bens matrimoniais particulares."],
+          ["Clepsidra", "Engenhoca medidora de tempo oficial padronizada sob normas procedimentais que gotejava fisicamente com fluído regulando o limite inviolável e concedendo estrita isonomia argumentativa idêntica franqueada e mensurada pelas descidas entre os oponentes das acusações discursivas orais contrapostas do réu da querela com bloqueios nas aberturas no decorrer da leitura das provas da instrução nas varas dos jurados populares para igualar processualmente o embate do tempo cedido à justiça procedimental perante multidões ouvissem igual quantidade vocal de ambas as partes litigantes perante as audiências públicas das sessões."],
+          ["Psephisma", "Estatuto aprovado não de forma atemporal como os conceitos eternos ou a lei primária ou divina ancestral que nunca modifica mas os decretos pragmáticos específicos ordinariamente debatidos formulados pelos conselhos diários apresentados ao quórum popular na votação do morro para medidas táticas passageiras em despachos do Estado contornando e sanando impasses locais ordinários no seio da sociedade na época para administração rotineira civil do aparelho burocrático."],
+          ["Nomothetai", "Colegiado especial judiciário reunido como um crivo superior formados unicamente pelos painéis compostos pela sociedade eleita oriundos dos tribunais maiores convocados em ritos não ordinários a atuar soberanamente julgando as propostas de mérito da adequação constitucional procedendo revisões profundas e votações que revogassem em definitivo substituindo velhos costumes processuais por inovações e modernidades nas regras estatutárias nas vigências nas repúblicas da polis clássica alterando definitivamente leis vitais."],
+          ["Liturgia", "Sistema engenhoso obrigacional e fiscal não indireto imputado pelo aparelho da administração aos estratos mais ricos do corpo civil onerando solidariamente os aristocratas compulsoriamente os induzindo custear e materializar financiamentos diretos nas atividades necessárias dos entretenimentos cerimoniais atléticos no Estado promovendo de seu próprio tesouro particular o brilho e bem estar coletivos nas festas ou expedições que se lhes outorgavam a missão pela cidade honrada socialmente em caso dos empenhos serem notórios ao sucesso comunitário nas províncias urbanas anuais na época da fundação do calendário festivo burocrático em honra as virtudes pátrias e divinas promovendo paz ou mobilização dos concidadãos aos teatros das arenas e aos banquetes da comunidade nas ruas e ágoras."],
+          ["Coregia", "Variante compulsória fiscal onde se tributava o munícipe afortunado designando encargo que requeria sua tutela material obrigando a providenciar sustentos financeiros a arcar com os custos não raros astronômicos no treinamento contratação de roupas músicos adereços e alimentação especial destinada aos artistas de um contingente inteiro responsável e ensaiado nas tragédias encenadas anualmente nos grandes concursos honrando nos altares o teatro nacional como encargo tributário individual voltado à cultura nos espetáculos obrigatórios do povo com finalidade legal e ritual religiosa."],
+          ["Trierarquia", "Imposição pesadíssima fiscal que tributava o cidadão mais posses exigindo que assumisse pessoalmente a função com dispêndios particulares anuais equipando contratando tripulações peritas armando mantendo consertos materiais mantimentos comandando estrategicamente em prontidão e com aptidão combativa náutica o fornecimento e reparação custeando de forma plena de uma das embarcações navais de propulsão rápida de combates dos contingentes da esquadra garantindo belicamente o aparelho nacional frente à marinha externa alheia da cidade defendendo assim sem usar do erário comum o flanco de todos perante inimigos na guerra como obrigação estrita jurídica perante as magistraturas."],
+          ["Prostates", "Figura central protetiva onde a legislação restringia processualmente estrangeiros que lhes forçavam contratarem e se fiarem civilmente elegendo um concidadão residente e nascido titular legal da terra e nas assembleias que ficasse formalmente responsável se posicionando fisicamente prestando fiança pagando eventuais multas patronando legal e processualmente nos pórticos judiciais todos e qualquer imigrante nas esferas oficiais sendo obrigatória esta representação em todos atos judiciais sob os magistrados sem a qual os imigrados padeciam na inépcia jurídica processual total e nas execuções penais no mundo cívico sendo indispensável na intermediação burocrática e processual diária em trâmites cíveis no governo."],
+          ["Enktesis", "Decisão de rara natureza que concedia pela maioria absoluta votos assembleares a extrema benevolência outorgando direitos de privilégio de caráter excepcional e irrevogável perante ao estatuto jurídico precário conferindo as garantias imobiliárias em terras e autorizações permitindo um migrante residente notório pelo patriotismo comprovado ter autorizações especiais na aquisição e posse dos ativos de moradas telhados propriedades da terra na jurisdição pátria contornando assim a severidade e rígida tradição consuetudinária reservando patrimônios exclusivos das habitações somente aos clãs ou às linhagens da filiação cívica plena herdadas de nativos e filhos consanguíneos atenienses originais para moradias habituais."],
+          ["Oikos", "Unidade base imobiliária fundiária orgânica familiar da antiguidade englobando como ente dotado de perenidade inviolável as paredes as terras o patrimônio total seus descendentes livres tutelados agregados dependentes as tumbas aos escravos sendo núcleo principal ao redor ao qual todas leis antigas protegiam de rupturas desapropriações focando a justiça ininterrupta em perpetuar economicamente e repassar verticalmente suas divisões da propriedade hereditária evitando o fatiamento absoluto da fazenda na descendência mantendo o pilar fundamental perante a organização estrutural cívica tributária militar de toda polis inteira coesa economicamente em sua existência milenar territorial perante assembleia na constituição."],
+          ["Kurios", "Tutela legal na função guardiã paterna dominadora central obrigatória pelo ordenamento patriarcal onde uma figura masculina livre sã na responsabilidade exercida quer esposo o pai o irmão adulto o filho agia oficialmente processando nas lides representando como patrono civil irrevogável de pleno direito absoluto perante as cortes nas transações comercias e nos contratos dotais regendo em absoluto todas as movimentações e testamentos envolvendo as ações de todas as partes do genêro na dependência do círculo familiar sem a presença da qual o ato civil da prole seria eivado das nulidades perante o tribunal e à justiça no cotidiano."],
+          ["Engye", "Firmação e convenção obrigatória antecedente das promessas firmes selada em negociação cível formal nos limites da lei nupcial configurando o acordo que determinava a futura entrega no trato firmado de mão pela garantia perante das partes do compromisso irretratável efetuado unicamente e restrito ao pai da noiva ou o seu tutor varão maior e das prerrogativas com os pretendentes das famílias onde os bens envolviam não escolhas de afetos ou de emoções particulares do pareamento mais apenas sim um pacto jurídico estrito transacional transferindo poder sobre a tutela para os maridos validando procriações na descendência do noivo em prol das tradições na sociedade dos costumes da pólis com fins na preservação da herança."],
+          ["Proix", "Patrimônio acessório legal fiduciário financeiro estrito vinculado no contrato de arranjo familiar não pertencendo por posse ao marido porém concedido a este nas núpcias cuja gestão lhe rendia apenas rendimentos condicionado e atrelado com cláusulas explícitas onde o capital o gado ou móveis depositado originário na mão das mulheres com fins no resguardo caso a união fosse malograda repudiada na lei ou se houvesse na morte obrigando pela norma a estrita e plena prestação da devolução financeira íntegra ou em dinheiro ao tutor ou a originária sem desvios aos genitores antigos em reparações pecuniárias para evitar ruínas femininas nas divórcios no tribunal ou desamparos da velhice nas mortes sob o código familiar civil do povo nas comunidades do mediterrâneo da era de costumes."],
+          ["Apokeryxis", "Procedimento notarial severo formalístico grave e oficial perante aos magistrados e arautos nos recintos cívicos efetuado como o maior desterro no núcleo parental onde pelo arbítrio total do líder da casa declarando nos autos cíveis e proclamados no alto renunciava perante a cidade aos laços e repudiava renegando formal e juridicamente expulsando irrevogavelmente um dos seus primogênitos rompendo a linhagem hereditária por afrontas imorais insubordinações o deserdando plenamente de toda expectativa e do patronímico no status e privando de toda e qualquer acesso do patrimônio sucessório convertendo a filiação original a uma existência jurídica esvaziada do clã abandonada em banimento existencial pela figura no poder tutelar paterno exercendo plenos poderes no lar frente aos legisladores do mundo perante assembleia em caso de grave ofensa civil aos deuses da casa ou falha de deveres familiares de grande calão inegociável nos tribunais antigos pelas praças gregas das polis antigas de épocas mais rústicas do legislador nos séculos remotos da civilização clássica e pré-socrática com vigor penal civil sem piedade da justiça perante testemunhas legais para consumar fato penal extintivo de direitos cíveis in natura contra descendentes em litígio familiar eterno com ruptura completa dos laços jurídicos da herança universal do cidadão da família e clã ancestral em rito perante a praça."],
+          ["Dike aikeias", "Ação penal privada estrita direcionada nos conselhos legais ajuizada sem interferências de oficiais públicos por vítimas ofendidas perante juizados visando perdas pecuniárias aplicáveis pelo julgador decorrentes nas reparações de lesões dores ou simples danos de violência intencional nas ocorrências como esbofeteios não letais vias de fato ou difamações severas ofensivas processadas contra eventuais ataques físicos ao corpo visando ressarcimento do ofendido com foco puramente patrimonial sem os aspectos punitivos das celas ao opressor garantindo um meio de justiça da compensação a ser arcado nas penas pela conduta e restabelecimento da moral nas ações das vias orais contenciosas nas ruas e tribunais das cortes para os desafetos julgados perante as bancadas dos juízes sorteados nos recintos de julgamento dos fóruns antigos em processos menores do dia a dia urbano."],
+          ["Dike exoules", "Ação mandamental expedida via litígio particular pelo credor processual utilizada no despejo direto acobertada e sancionada no peso e garantia magistral executiva autorizando coercitivamente as incursões das expulsões em moradias restituindo e recuperando aos legítimos titulares o direito sobre imóveis esbulhados terras tomadas de assalto ou por apossamentos violentos ilegais nas dívidas e hipotecas restabelecendo a posse garantida com força penal caso houvessem resistência do devedor usurpador no local ao qual incorreria em novas penas e cobranças acumuladas e espoliações na justiça em favor dos donos nas restituições das glebas originárias ou de patrimônios na cobrança de débitos judicializados em execução terminativa de contenciosos nos juízes executores da justiça nos povoados maiores em caso de recusas sistemáticas das entregas devidas das propriedades nas transações agrárias e civis."],
+          ["Gerúsia", "Câmara de anciãos legisladores de um Estado muito rigoroso, composta por nobres acima de 60 anos, encarregada de formular as leis que controlavam os costumes de todos."],
+          ["Éforos", "Grupo seleto de magistrados civis de enorme poder, eleitos anualmente em uma sociedade guerreira, cuja autoridade máxima podia julgar e condenar até mesmo os reis em caso de corrupção e desvio."],
+          ["Bule", "Conselho legislativo que operava como filtro democrático, formado por 500 membros para preparar minuciosamente todas as minutas e os rascunhos de leis antes de levá-las à votação das multidões e assembleias."],
+          ["Eclésia", "Instituição máxima e soberana em formato de gigantesca assembleia direta popular na qual todos cidadãos aptos opinavam abertamente nas praças erguendo o braço sancionando todas decisões estruturais em voto coletivo maciço no sistema igualitário radical."],
+          ["Sorteio Judicial e Público", "Engenharia política adotada pelos povos desta civilização que empossava e provia dezenas dos tribunais magistrados sem votos comédias eleitorais mais com moedas pedras nas máquinas e dados assegurando perfeitamente blindagens cegas a fim afastar os corruptos que compravam eleições elitistas de poder da época com o puro acaso de isonomia perfeita e inegociável cívica na distribuição do cargo político da época clássica."],
+          ["Epidicasia", "Ação solene para formalização patrimonial familiar decidida judicialmente visando adjudicar os destinos aos parentes do órfão garantindo na linhagem o enlace do parente designado na continuação em caso falecimento no seio familiar de filha cujo não restasse herdeiros sem o qual patrimônio desvanecia fora das alianças matrimoniais forçadas nas heranças na antiguidade civil nos tribunais do juiz das instâncias centrais nas urbes clássicas nos processos sem dolo nem litígios mais de averiguação da continuidade social e proteção testamentária para perpetuar das antigas estirpes das origens imobiliárias cívicas perante lei imposta no período das magistraturas em caso de falta de homens varões herdeiros perante as cortes nas sucessões."],
+          ["Sindicato de Naucraria", "Divisões fiscais organizadas em bairros conselhos cujos propósitos no direito estatal se resumiam na exação nos recolhimentos com aportes cobrados de navios exigindo obrigações aos grupos de aristocratas entregarem equiparem manter armamentos marujos garantindo poder tático nas marinhas sem recursos perante aos cofres públicos financiando assim com os deveres na aristocracia o peso estatal de segurança nas defesas náuticas obrigando por imposição ao erário comum das armadas bélicas antigas com fins cívico militar imperativos das leis e impostos."]
+        ];
 
-        // --- APP PRINCIPAL ---
-        function App() {
-          const [gameState, setGameState] = useState('setup');
-          const [teams, setTeams] = useState([
-            { id: 1, name: 'Equipe Alpha', score: 0, errors: 0 },
-            { id: 2, name: 'Equipe Beta', score: 0, errors: 0 }
-          ]);
-          const [currentTeamIndex, setCurrentTeamIndex] = useState(0);
+        const EGYPT = [
+          ["Ma'at", "Princípio cósmico fundamental de Verdade, Justiça e Harmonia que guiava as decisões de juízes e reis, simbolizado por uma pena."],
+          ["Tjaty / Vizir", "Supremo Magistrado e braço direito do monarca, ocupando a chefia de toda a máquina estatal judiciária do antigo império."],
+          ["Kenbet", "Tribunais populares nas províncias e pequenas comunidades, compostos por anciãos responsáveis por dirimir contendas cotidianas e contravenções menores."],
+          ["Djadja", "Conselho máximo de segurança sediado diretamente dentro dos muros palacianos que tratava exclusivamente de acusações de traição máxima ou golpes no monarca reinante."],
+          ["Lei Viva (Encarnação)", "Dogma governamental inquestionável em que as declarações faladas do chefe do executivo portavam peso absoluto sagrado constituindo as regras de imediato sem deliberação dos outros."],
+          ["Decretos de Coptos", "As mais antigas isenções estatais inscritas em grandes lousas preservadas, que concediam para todo o sempre proteções e isenções tributárias completas a fundações religiosas."],
+          ["Decreto de Horemheb", "A mais célebre lei moralizadora da antiguidade local que estipulava amputação da face para cobradores corruptos, soldos e punindo quem chantageasse devedores miseráveis."],
+          ["Reformas de Bocchoris", "Decretos de compaixão num período posterior ao da grande glória, cujos textos encerravam aprisionamento compulsórios e atávicos decorridos pela penúria garantindo direito irrestrito ao pão dos inadimplentes endividados nos sistemas de trabalho servil."],
+          ["Código de Hermópolis", "Valioso achado manual de práxis forense que normatizou sentenças em ações demarcatórias aluguéis inventários doações de pais auxiliando o burocrata magistrado na elaboração dos éditos rotineiros com os ritos nas comarcas dos tempos do antigo norte africano e suas normas processuais nos pergaminhos e tribunais civilizatórios dos templos sagrados nos pátios no calor da história das areias com sentenças para os rituais dos litígios nos tempos dos reis ptolomaicos da antiguidade em seu esplendor com procedimentos formais dos juízes dos papiros desenterrados e salvos."],
+          ["Imyt-per", "Termo técnico legal denotando 'documentos da casa' a origem e modelo primeiro das sucessões registradas ou testamentárias autorizando a transmissão antecipada de haveres sem questionamentos dos bens para descendência com eficácia em vida chancelada em foro em papiro garantindo propriedades futuras aos cônjuges de doações antes do fim dos titulares das herdades do rio da nação do império perante cartórios antigas da nação com chancelas do rei no fim das eras pátrias perante os tabelionatos antigos na era clássica da antiguidade."],
+          ["Contratos de Proteção à Esposa", "Evolução inigualável nos casamentos onde minutas detalhados asseguravam que uma mulher possuía capacidade processual não só de retenção separada nas possessões mas obrigações e multas pesadas por quebra por infidelidades recíprocas além de assegurar heranças do marido perante as outras consortes caso o trato não findasse pelas regras da moral com pagamentos em víveres metais nos casos concretos e penais nos tribunais antigos perante testemunhas de juramentos solenes perante escribas no local formal do matrimônio em papiros da nação nas vilas da planície alagada do passado glorioso perante divindades locais no santuário e rituais sociais."],
+          ["Primeira Greve da História Registrada", "Manifestação coletiva paralisação laboral inusitadamente protegida por tolerância onde diaristas artesãos do vale pararam ferramentas alegando que o Estado descumpriu o cronograma do abastecimento mensal perante provisões clamando pela subsistência sem serem fuzilados no paredão como outras rebeliões exigindo respeito as provisões perante juízes escribas dos grandes assentamentos nas eras antigas frente a fome crônica nos templos e assentamentos sob controle nas províncias nas eras gloriosas com manifestações nos pátios dos fóruns da época remota com rito pacífico por alimentos na história antiga mundial."],
+          ["Tratado de Kadesh", "O pioneiro grande acordo internacional entre duas das mais vastas potências militares antigas da era de bronze estipulando um pacto perene amizades perpétuas com cláusulas detalhadas exigindo repatriação extraditando infratores inimigos ou traidores em fugas entre as nações fronteiriças com garantias das cortes e dos divinos testemunhos perante gravuras nas muralhas com as cópias ativas resguardadas na prata perante os emissários consulares na ratificação do armistício dos reinados da antiguidade remota selando paz jurídica com ritos bilaterais sem anexações nas areias da mesopotâmia vizinha no levante asiático de outrora na terra do sol e areias profundas perante seus governantes supremos selando amizades internacionais das civilizações da antiguidade nos tempos áureos remotos da história jurídica e militar nos reinos."],
+          ["Julgamento Divino (Pesagem do Coração)", "Ficção de balança sobrenatural de veredictos perpétuos em que o defunto se postava atestando nas alegações o livro e sentenças absolvendo onde o tribunal infernal media crimes terráqueos do falecido punindo faltas nas almas impuras por perjúrios faltas corrupções a justiça final de pavor transcendental dos réus sob o código de ordem superior em um tribunal de quarenta e dois deuses nos salões míticos e ritos fúnebres como jurisprudência de controle social das eras míticas do vale do rio sagrado da religião do Estado para comportamento penal moral sob os ensinamentos divinos pátrios aos súditos e camponeses do povo da era mítica e áurea da humanidade na antiguidade."],
+          ["Asilo no Recinto Sagrado", "Proteção absolutista milenar provida caso foragidos evadissem para as muralhas templárias inibindo prisões penais no solo a não ser por decreto real onde a intervenção divina servia como o tribunal temporário protetivo impeditivo as execuções e guardião de súditos ou escravos frente opressores sob o pilar da piedade dos sacerdotes dos rituais litúrgicos nas construções suntuosas em honra do invisível da cultura civil no país sob o comando sacerdotal soberano local na era da história e lendas antigas locais na história civil com fóruns invioláveis em seus templos gigantescos nas areias sob punições divinas para violações cíveis pelas tropas de buscas dos prefeitos nas cidades do passado com santuários respeitados nos refúgios sagrados das eras perdidas."],
+          ["Oráculos como Juízes Supremos", "Costume ritual judiciário curioso na praça onde pendências e lides complexas ou investigações eram inquiridas não só nos conselhos mas perante as estátuas levadas no andor cujos impulsos e balanços para frente determinavam sim a verdade condenação vereditos irrecorríveis atestando por milagres com o endosso divino inconteste nas apelações e nos depoimentos testemunhais dos processos criminais não resolvidos pelo vizir magistrados na ausência das provas irrefutáveis nas investigações ou nos rituais de inquérito civil no Estado dos reinos das areias em decisões oraculares e litúrgicas."],
+          ["Juramento Máximo do Testemunho", "Compromisso fático incontestável lavrado com jura máxima jurando pelo alento do rei da nação de punição gravíssima imputando morte do perjúrio o testemunho do pacto e dos processos judiciais nas esferas oficiais no foro de julgamento nas confissões por torturas nas audiências da sociedade nos recintos de justiça pátria antiga em caso do réu no interrogatório dos processos civis ou nos trâmites de testemunhos mentirosos comprovados sob investigação na antiguidade no julgamento final das cortes e magistraturas e nos conselhos da comunidade civil sob império das leis nos papiros jurídicos."],
+          ["Juramento Contratual Comum", "Jura popular para negócios contratos corriqueiros perante santidades nos recintos templários validando negociações de escravos promessas mercantis testemunhas particulares com invocações simples divinas perante ritos cartoriais sem o peso fatal capital caso em inadimplência mais atrelando os resultados judiciais a sanções dos sacerdotes e escribas em pleitos menores nos foros nos litígios por provisões no campo cível comercial ordinário entre súditos privados da nação na história da vida diária no tribunal das capitais regionais com sentenças ordinárias sob multas aos sonegadores sem punições ou sentenças corporais extremas e letais nas regras diárias do povo da época em litígios menores cíveis das famílias simples de cidadãos da era antiga com resoluções civis e acordos simples nos mercados da história do país ancestral nos domínios do faraó."],
+          ["Mutilação Judicial Administrativa", "Retaliações amputações de orelhas e cortes penais nos narizes penalidade punitiva institucional das justiças e penas por subornos perjúrios fugas condutas reprováveis atestadas pelas sentenças do palácio carimbadas deixando os infratores criminais e burocratas corrompidos de forma notória estampada nas cidades alertando a toda plebe as reprimendas do estado e seus tribunais no rosto das famílias banidas nos tempos de justiças das sentenças duras no norte da África antiga e de seus domínios provinciais nas cortes do passado das penalidades nos papiros sem misericórdia oficial com decretos de justiças sob o comando dos deuses do estado governante absoluto com suas sentenças executadas pelo carrasco e por decreto do juiz vizir no centro de justiças no salão de justiça pátrio e regional sob leis rigorosas penais estatais antigas"],
+          ["Responsabilidade Solidária do Clã", "Teoria e punição estendida drástica em casos traições deserções militares revoltas de funcionários as cortes condenavam aprisionando em cativeiros os escravizando ao Estado exterminando linhagens os familiares irmãos avós todos pelo crime perpretado de seus parentes com dolo de proteger o regime inibindo rebeliões através terror punitivo com confiscos completos de pátrios para domínios sem recursos nas colônias perdendo totalidade da cidadania e pátria submetidos perante as chancelas vizir e das assembleias na defesa estrita monárquica de seu sistema judicial absoluto e cruel por ofensa de guerra rebelde sob execuções rigorosas nas eras monárquicas para os opositores golpistas dos reinos e nações da antiga era na repressão aos inimigos estatais sem condescendência nos tribunais de justiça antiga no império"],
+          ["Igualdade de Direito Proprietário Feminino", "Fenômeno inédito das épocas primevas permitindo atestações processuais negociais testamentárias com as concidadãs e senhoras plenas no exercício judicial nos litígios sozinhas vendendo heranças terras perante foro oficial assinando escrituras e se defendendo solteiras perante testemunhas de modo igual sem necessidades patriarcais atreladas no controle do seu domínio material sendo únicas no mundo antigo em prerrogativas independentes para os trâmites do registro de propriedades de bens adquiridos por lucros pessoais sem interferência dos varões nas burocracias sob chancelas oficiais dos reinados plenos nas transações econômicas civis da sociedade sem os tutores de imposição forçada perante cortes jurídicas locais e burocratas do rei nos tempos na era mítica e real do povo das cheias plenas da antiguidade no seu período em ascensão civil na humanidade com leis brandas às esposas nas cortes e em documentos legais escritos de cartórios da sociedade"],
+          ["Divórcio Unilateral de Iniciativa Plena", "Benefício contratado nos acordos das esposas as capacitando recesso rompimento abandono da união de matrimônio livremente caso as cláusulas pátrias garantidas fossem aviltadas pagando indenizações e assumindo separação reavendo garantias sem desonras sem apedrejamentos na moral preservando sustento da devolução patrimonial nas sentenças perante o Kenbet provando nos fatos das rupturas no laço familiar amparadas nas atas por testemunhas legais de seu povo na libertação civil e rescisão formal do pacto conjugal antigo sob ordens e anuência explícita dos tribunais nos arquivos das transações garantidas por contratos elaborados pelos guardiões da justiça antiga e redatores legais nos assentamentos rurais em processos cíveis com separações sem culpas divinas graves das lides conjugais comuns em toda nação do nilo nos tempos de ouro do povo com leis civilizadas de proteção matrimonial na era clássica da sociedade no norte africano em documentos originais resgatados na areia"],
+          ["Arrendamento Fiduciário do Estado", "Tratos documentais civis agrários em lotes terras de templários campos públicos permitidos por aluguéis indexados pela produtividade agrícola chancelada garantindo percentual nos lucros cobrando safras no imposto estrito da colheita oficial recolhida pelas forças de prefeitos no local na distribuição de riquezas com o povo das comunidades locais servindo aos celeiros reais com justiça tarifada sob escrituras do palácio para sustento das cidades imperiais dos domínios antigos perante escribas contabilistas nos impostos recolhidos pelas safras por contratos na agricultura oficial regida pelas leis rurais de assentamentos nos reinos e capitais do passado nas províncias submissas da era antiga das águas em enchentes sazonais do vale das nações com impostos cobrados nas épocas certas."],
+          ["Cadastro Nacional na Casa da Vida", "Registros burocráticos imensos estritos nos arquivos das metrópoles de todas partições fronteiras agrícolas propriedades com marcos precisos visando recolhimentos resoluções litígios disputas das enchentes anuais solucionando perante vizires embates fronteiriços e fraudes fiscais nas sucessões hereditárias de forma matemática exata e definitiva sem disputas com escrituras sagradas depositadas em segurança secular e perpetuidade nos templos do rei supremo nas províncias e distritos com cartórios centrais de justiça pátria antiga resolvendo demandas nos papiros de registro original e eterno do Estado civil organizado das cortes para litígios processuais perante escrivães da coroa nas terras sob cheias em toda planície da nação nos milênios iniciais da sociedade."],
+          ["Pena Morte Executada em Estacas", "Condenação capital atroz imposta reservada especificamente por usurpação profanação extrema do sagrado crimes lèse majesté como atentados à vida das nobrezas escavações furtos saqueamentos violadores das tumbas reais valendo extermínio atroz não meramente nas masmorras mas empalados com execuções aterrorizantes punições estatais nos centros praças com o rigor divino absoluto da realeza servindo punição do poder coercitivo nos tribunais por desonra aos tesouros reais nos tempos e eras da humanidade remota sob penas exemplares cruentas em ritos do estado sob o domínio imperial nos vales das necrópoles dos príncipes imperadores da civilização sob regras militares letais sem julgamento nos confins de areia com rigor militar imperativo e mortífero sem chance aos réus reincidentes do Estado absoluto na antiguidade punitiva perante a multidão no fórum."],
+          ["Corpo Burocrático dos Escribas", "Técnicos redatores notariais imprescindíveis espalhados na burocracia do funcionalismo nas instâncias redigindo atestados petições ordens testamentos transcrevendo as sentenças as sentenças penais as averiguações compondo toda malha intelectual que sustentava os vereditos do tribunal garantindo com tinta a permanência imortal dos fatos e leis julgadas para provisão dos inquéritos das capitais com precisão no sistema do governo real nas varas e juizados da coroa antiga como a base legal processual oficial na instrução escrita das causas e sentenças oficiais nos papiros eternos das sentenças judiciais nas províncias regionais prestando serviço as cortes maiores na instrução com testemunhos nos relatórios de inquérito judiciários nos julgamentos da vida e litígios rurais das nações do governo de lei monárquica no estado com magistraturas oficiais das leis no reino na era em questão em que a literatura despontava nas praças antigas e fóruns estatais com leis elaboradas na nação clássica com tradições de escrita na época original"],
+          ["Súmulas e Precedentes Formais", "Sistematização judicial nos processos garantida em arquivos enormes perante gabinetes da magistratura usando compilações das resoluções vizires pretéritos como bases espelhos para argumentações de casos novos de mesmo jaez embasando sentenças coerentes evitando contradições entre os juízos de mesma ordem com as leis perenizadas do pálacio do rei para os conselhos e julgadores locais nas praças orientando assim uma jurisprudência formal primitiva que equalizava sentenças judiciárias da burocracia nacional para unificar os processos com justiça igualitária no país submisso na antiguidade remota dos milênios e glórias faraônicas nas audiências oficiais dos processos civis nos reinados com magistrados eruditos de leis do país"],
+          ["Legalização de Filhos Bastardos", "Instrumentalização sucessória cível oficial onde genitores possuíam permissão do foro mediante atos expressos perante conselhos testamenteiros de conceder cidadanias participações e garantias aos bastardos das concubinas atestando para o mundo as origens para recebimentos dos quinhentos plenos nas heranças após as mortes desprovidos das censuras legais em suas origens mantendo linhagens e provisões com as legitimações processuais para proteger a união com dependentes perante testemunhas legais em cortes do povo antigas da nação abastada do passado da antiguidade nas relações da união em vida garantindo proteções as cortes antigas nos tribunais pátrios do passado para sucessões justas e igualitárias no leito de morte da época e proteção das propriedades rurais familiares no tribunal antigo da civilização sem casamentos solenes de nobres do período de ritos mais brandos civis e justos perante o Estado original"],
+          ["Adoções Libertadoras Funerárias", "Tática engenhosa testamentária familiar instituída concedendo emancipação carta forria e laços legais familiares plenos aos domésticos servis em casos de casais idosos desprovidos herdeiros com finalidade pragmática em tornarem descendentes encarregados pelo culto das oferendas pós mortes nas liturgias do descanso final herdando na troca o usufruto das posses garantindo eternidade nos rituais perante o Além com obrigações perante os vivos nas cortes civis para evitar o oblívio divino com ritos de adoções legais em tribunais nas cortes perante a vida civil oficial no império da crença pós vida e sucessões terrenas do código da sociedade da antiguidade clássica nos tempos e tradições com rituais fúnebres sagrados vinculados nas transações matrimoniais das escrituras e provisões nas varas das comarcas de vilas e metrópoles antigas na era remota sob reis divinos do estado absoluto no norte"],
+          ["Partilha Igualitária Patrimonial", "Diretriz estrita testamentária sem as exclusões de sexos comuns da antiguidade onde filhos e primogênitas fracionavam estritamente idênticas das proporções equitativas das cotas dos móveis das propriedades sem submissões ao varão sendo as filhas co herdeiras em graus inatacáveis provendo na família igualdades notórias atestadas nas petições cartorárias nos litígios dos reinos em favor feminino dos diretos plenos aos bens imobiliários na divisão da terra e bens deixados nas mortes e inventários no seio das famílias e clãs perante as decisões justas e equânimes da ordem civil e sucessões nos reinos originais da era faraônica sem privilégios sexuais masculinos nos direitos da herança com paridade nos tribunais do estado nas praças em todos os recantos geográficos no rito final das vidas da comunidade civil da era antiga clássica sob leis sábias com garantias nas justiças estaduais no período antigo"],
+          ["Tropa Medjay Judiciária Policial", "Corpo ostensivo paramilitar constituído por nações nômades assimiladas encarregado nas rondas das metrópoles de prender torturar interrogar investigar proteger fronteiras necrópoles dos saqueadores operando com braços do judiciário para aplicar intimações manter vigilâncias e efetuar flagrantes por ordem do palácio dos magistrados a realeza central punindo crimes nas regiões e vales imperiais na proteção da paz e sentenças sob decreto judicial em toda a nação de épocas remotas da civilização imperial e monárquica do passado na polícia ostensiva dos reinados faraônicos clássicos no policiamento do mundo da época antiga em apoio as sentenças judiciais nas capitais e tumbas da época imperial sem desvios do dever da coroa do estado no tribunal em que a lei emanava e era aplicada pelos oficiais das areias na função de ordem nas cortes locais da antiguidade"],
+          ["Supremo Conselho Aristocrático", "Assembleia restrita das altas esferas composta do palácio chamada trindade das dezenas os trinta figurando a nata burocrática da nação selecionada dos príncipes orientando juízes e elaborando diretrizes nacionais prestando total assessoramento as cortes vizir judicando as causas monumentais das cidades de Estado das eras imperiais da história no cume do sistema hierárquico das leis divinas estatais do governo perante todo país antigo em apelações de última instância dos tribunais com sentenças para casos gravíssimos regionais na coroa da antiguidade e nos reinados remotos do norte geográfico nas leis da era clássica e absolutismo puro dos magistrados máximos do passado na organização jurídica suprema do povo da nação milenar do rei com leis de peso definitivo na balança"],
+          ["Distritos Judiciais e Fiscais", "A organização territorial de jurisdição perfeita da civilização com quarenta províncias administrativas onde todo imposto inquérito tribunais demarcações eram agrupados de forma autônoma submissas à coroa padronizando a administração e os recolhimentos nas fronteiras para unificação das sentenças e tribunais regionais da burocracia perfeita sob os domínios do monarca absoluto nas terras milenares antigas em todas suas possessões mapeadas e controladas com rigor da ordem das divisões civis na era das dinastias divinas nos reinos em épocas de grandes domínios com o comando unificado da monarquia dos milênios em suas esferas de prefeituras distritais perante as justiças em ação e tribunais das cortes regionais no mapa político da terra dos rios"],
+          ["Governadores Magistrados", "Gestores e prefeitos locais dotados do poder máximo em suas comarcas não só nas questões da exação dos impostos estaduais mas operando o tribunal na comarca julgando as causas civis presidindo inquirições executando os decretos reis nos limites de seus territórios de forma descentralizada para evitar anarquia mas sempre sob controle dos olhos divinos da metrópole das nações no governo na província da terra com poderes administrativos absolutos nas varas e recolhimentos da safra no estado submisso as ordens superiores e vizires com poder executivo e judiciário nas cidades espalhadas na nação inteira nos reinados da glória do monarca absolutista em eras das conquistas imperiais e manutenção da pax interna nas comunidades do país com as justiças na alçada dos líderes locais no governo pátrio nas aldeias civilizadas sob controle central"],
+          ["Expurgo Negativo Ordalha de Veredicto", "Princípio doutrinário teológico de auto absolvição enumerada no código funeral religioso contendo negativas peremptórias não matei não furtei não conspirei utilizadas como o passaporte processual moral perante o juízo dos deuses absolvendo de responsabilidades terrenas garantindo o veredicto perante as entidades pós mortes num modelo de direito espiritual inalienável das lendas das condutas sociais pátrias exigidas para vida das almas como guia moral jurídico da população da era sagrada na humanidade dos impérios da areia no julgamento final das cortes e para absolvição da vida sob o peso de leis da religião estatal nas morais da nação faraônica em preceitos obrigatórios morais civis da vida antiga com justiça severa nas doutrinas e pregações templárias nas religiões dominantes e rituais no além após existência na carne na era mítica das leis eternas nas civilizações e tradições com justiça perfeita"],
+          ["Desterro Penoso Penal", "Pena corporal forçada infligida alternativamente as execuções despachando sonegadores prisioneiros traidores e subornados a marchar nas piores prisões a céu aberto nas pedreiras escaldantes ou para minas escuras sem retorno ou nas oásis desérticos com exaustão laboral mortal em favor do estado enriquecendo coroa através punição civil sob chicotes prestando dívida final carcerária para infrações pesadas de estado como expiação no tribunal militar das sentenças implacáveis do vizir em casos das leis corrompidas no império da glória passada nas colônias sob vigilância de tropas da justiça penal extrema dos domínios da monarquia de ferro em eras distantes sem absolvição nas sentenças definitivas carcerárias com pena perpétua de castigos aos criminosos banidos perante as nações regionais dominadas em campos forçados das províncias extremas na era antiga com punição máxima alternativa as mortes e fogueiras em julgamentos oficiais nas arenas distantes da coroa e palácio no tribunal central das eras"],
+          ["Tributação Científica Agrícola", "Método genial estatal isonômico atrelando a régua dos impostos na exata medida em que enchentes anuais irrigavam solo nos poços marcadores definindo as safras garantindo assim ausência extorsões nos devedores em secas isentando províncias punindo em farturas equilibrando o recolhimento com as benesses divinas sazonais nos tribunais agrícolas para cálculo perfeito contábil na administração da fazenda perante a terra inundada anualmente e seus deuses da fertilidade em época certa para justiça tributária perfeita com a régua do tesouro e escribas do palácio e das justiças na região com tributos em grãos recolhidos pelo governo na dinastia sem o esmagamento camponês desmedido nas eras prósperas com tributações inteligentes das cheias regulares nos leitos rurais sem disputas litígios sob as varas fazendárias no estado em leis naturais harmônicas do cosmos e do rio milagroso da civilização central sob comando absoluto no reino da história antiga com cálculos e medidores nos sistemas"],
+          ["Privilégio Feudal Religioso", "Decretação oficial das prerrogativas concedidas para proibir os soldados e fiscais recrutar qualquer monge clérigos das grandes fundações isentando nas construções rurais corveias públicas ou impostos garantindo total asilo econômico e poder autônomo e fomento as religiões como um poder em paralelo das cortes na magistratura intocável do tesouro do império protegido pelas maldições em lousas nas eras sagradas protegendo clero nas funções templárias do país das leis intocáveis e sagradas da dinastia da nação com ordens de divindades do monarca nas concessões de terras e propriedades nas épocas imperiais com poder estatal descentralizado em castas divinas para justiças na terra sem exações militares da força executiva na era clássica da religião de estado nas nações das civilizações nos templos imensos das pedras erguidas sob proteção de estado antigo com decretos divinos reais de justiças inalienáveis na lei vigente das eras do rei sagrado do passado da planície nos séculos antigos"],
+          ["Punições Extremas a Infratores Ecológicos", "Lei punitiva rigorosa com viés de tabu onde exterminar maltratar ou sacrificar deliberadamente um animal sagrado patrono de deuses seja vacas felinos touros resultaria instantaneamente em processos capitais linchamentos retaliações divinas punitivas inafiançáveis nas praças sem defesa cabível com base em ofensas diretas a divindade pátria nas nações com rituais totêmicos absolutos no estado com a lei aplicada pela plebe revoltada sob vista grossa do juiz regional e da coroa divina na época das punições sumárias de infração por heresia ambiental nas eras arcaicas com leis severas sem remissão das culpas mortais e tabus sagrados intocáveis no mundo antigo sem recursos na justiça perante o crime e blasfêmia fatal nos templos e deuses protetores do local sagrado das urbes e vilas submissas a autoridade e religião de estado e ritos e punições capitais irremediáveis na história"],
+          ["Padrões Percentuais Cambiais Mercantis", "Regulamentação bancária elementar mercantil baseada em escrituras para fixações exatas legais proibindo agiotagens extorsivas demarcando os exatos acréscimos das permutas no fornecimento das sementes sopesando garantias da prata sem inovações destrutivas com as multas perante faltas contratuais controlando as inflações de forma consuetudinária perante fiadores testemunhais nas audiências rurais nos foros de litígio comercial e contratos no império antigo e justiça das trocas e compras no estado sem moedas cunhadas inicialmente perante as nações mercantis e comércios no mar vermelho e rios das regiões da época gloriosa de comércio na paz do faraó supremo das negociações nos tempos com acordos judiciários rurais sem explorações ilimitadas da riqueza das províncias da nação dos impostos pátrios no sistema econômico em expansão nos anos e períodos clássicos do passado do governo das nações sem papéis moeda oficiais apenas por peso atestado de prata e balança das feiras com registros jurídicos contratuais de pagamento com multa no cartório"],
+          ["Alienabilidade das Cadeiras Divinas", "Transações inusitadas legais provando avanços onde os próprios cargos litúrgicos hereditários posições nas santidades e templos viravam mercadoria negociadas como ativo repassados hereditários por herança alienados como franquias com faturamentos e aluguéis em cartórios legalizados garantindo renda as famílias detentoras dos monopólios religiosos secundários atestados nas instâncias sem ofensas das castas dominantes na capital do império pátrio na era ptolomaica e em períodos liberais das finanças estatais antigas em escrituras oficiais de cartórios com bens incorpóreos das rendas perante as burocracias sob selo real nas negociações imobiliárias em capitais antigas com lucros das doações estatais em leilões formais na sociedade mercadológica e livre concorrência nos fóruns antigos das províncias menores nos séculos passados sob a justiça do império em transações livres na praça comercial garantindo lucro de prestígio sem apropriações estatais das fontes e cargos eclesiásticos da época"],
+          ["Incexto Régio Protegido", "Doutrina e foro exclusivo de privilégio da casta imperial monárquica onde o matrimônio intrafamiliar irmãos era lícito louvado necessário garantindo o sangue puro sucessório inquestionável as divindades perante a sociedade contrariando a proibição penal comum aos civis blindando a linhagem contra pretendentes não pátrios para domínios heranças da realeza suprema divina protegendo a dinastia no trono com lei absolutista sem reprovação e imune aos preceitos morais perante deuses ou leis no estado absoluto na coroa antiga perante tradições patriarcais em sociedades do mundo mitológico sem paralelos e proibições em tribunais das províncias com imunidade dos filhos sagrados dos deuses nos comandos imperiais nos palácios da coroa reinante dos monumentos sob os cultos absolutos e tradições imortais de deuses reinantes com plenos direitos na vida e herança faraônica sem disputas judiciais nas eras passadas das civilizações no governo de reis e deusas do país sagrado na humanidade"],
+          ["Núpcias e Heranças Populares", "Costume e lei consuetudinária pacífica nas províncias não de castas ditando e impondo uniões com paridade sem poligamias explícitas no mesmo núcleo habitacional garantindo o foco familiar na linhagem da propriedade a filhos legítimos principais embora não incriminando coabitações periféricas sem direitos patrimoniais integrais com concubinatos em prol e estabilidade da oikos da comunidade sob os juízes em testamentos das posses no direito comum camponês no reino sob os preceitos pátrios das tradições diárias nas varas de assentamentos sem poligamias oficiosas garantindo assim sem diluições totais nas posses do cidadão nas capitais provinciais e disputas e demandas das esposas consortes em tribunais nos assentamentos rurais em processos julgados nas áreas comuns e praças centrais em audiência com anciões com resoluções simples sem dolo nos trâmites civis rústicos no período ancestral em regras da comunidade e respeito filial sem as desavenças do concubinato nas resoluções da era remota de casais no antigo reino com respeito no foro e sentenças e testemunhos nos documentos"],
+          ["Garantias na Alienação de Cativos", "Cláusula protetiva comercial rígida e essencial chancelada para assegurar o ressarcimento da transação caso a escravidão ou o servo transacionado possuísse defeitos viciosos pretéritos moléstias graves ignoradas e especialmente perigos nas evasoẽs e tentames em fugir garantindo ao cobrador reembolsos em tribunais caso o contrato se desviasse por mentiras provadas nas cortes de pequenas causas do estado comercial mercante protegendo as transações mobiliárias de compras e perdas rurais na economia de mercadorias no mundo ancestral perante justiças cíveis nos escrivães oficiais sem dolo dos contratantes com garantias de uso contínuo das mercadorias sem rebeliões nas compras em dinheiro prata perante os feudos das famílias e compras nos leilões mercantis nas províncias estatais da planície sob leis imperativas econômicas e ressarcimento total em prata pelas perdas com devoluções perante mercadores e intermediadores sem questionamentos do vizir nos inquéritos justificados na antiguidade civil com multas de valor dobrado nos documentos dos pátios de comércio na via mercantil com atestações das trocas na antiguidade"],
+          ["Recrutamento Básico Civil Laboral", "Regulamento impositivo de prestação temporária para utilidade pátria obrigando sem remunerações monetárias todos camponeses nocios nas safras das inundações participarem de monumentos erguimentos de represas valas obras públicas a serviço da coroa como tributo braçal servil perante corveia com sentenças e prisões aos desertores submetendo por direito a plebe nas ordens imperiais a edificar sob pena nas construções de deuses da coroa absolutista sem negociações sindicais na era dos impérios e governos com chicote no comando e escribas nas anotações de presenças diárias obrigatórias com as rações fornecidas sob a alçada da lei e administração pátria do império nos confins desertos ou capitais de domínio imperial absolutista no passado glorioso e sofrido nos canteiros da eternidade e pirâmides com punições corporais por abandonos laborais não chancelados no rito sumário dos tribunais regionais nas praças da dinastia para camponeses na obrigatoriedade anual civil da época prestando o serviço cívico dos reinados ao monarca no trono"],
+          ["Tributação da Bebida Estatal", "Exigência monopolística governamental severa de arrecadação proibindo evasoẽs nas manufaturas locais com taxas compulsórias recaindo na fabricação popular de pães líquidos inebriantes diários base de nutrição garantindo os celeiros do palácio repletos sob a lei para remunerações exércitos sacerdotes sem as falhas nas safras tributadas de cevada nas administrações locais fiscalizadas pelos agentes estatais das prefeituras rurais com punições ou execuções sumárias por sonegações volumosas no contrabando de insumos essenciais perante justiças das varas financeiras na pátria antiga e seus impostos nas rotas rurais da economia em expansão e planejamento imperial perante os tribunais regionais das capitais com controle sobre monopólios rurais na história antiga mercantil em milênios da dinastia governante e seus conselheiros oficiais para a segurança financeira do governo absolutista"],
+          ["Doutrina Humanitária Real", "Preceito dogmático imperativo que consagrava na propaganda legal que as leis e vizires exerciam proteção máxima acolhendo ser pai do desolado amparo as órfãs defesa suprema sem custas aos fracos sem padrinhos opondo-se teórica aos ricos perversos como juramento solene ao trono garantindo favor judicial da equidade na corte protegendo desamparados como a virtude final cobrada por deuses do monarca supremo perante as audiências públicas provando misericórdia na justiça dos inquéritos das capitais com compaixão e clemência do governante benevolente das nações submissas e suas justiças nas praças de clamores dos desamparados da vida cruel nas tribos e regiões afastadas do mundo real com socorro imediato com sentenças perante o clamor as cortes de clemência do rei magnânimo nas eras passadas da civilização que primava pela caridade em documentos sob selo monárquico no país da humanidade na era de tradições"],
+          ["Isolamento Inquisitório Prévio", "Uso rotineiro e processual garantido nos ritos onde antes que provas pudessem periclitar depoimentos contaminar mandados autorizavam reclusão forçada dos denunciados no xadrez dos complexos divinos em isolamento perante inquéritos de vizires para coleta das evidências e sentenças não permitindo evasões aos desertores ou fugas durante processos penais gravíssimos do estado em casos ruidosos contra o patrimônio supremo no país nos casos policiais das justiças e interrogatórios das cortes das nações de tempos longínquos assegurando flagrantes e o cumprimento dos prazos processuais e mortes em confissões perante as salas de suplício com os réus aguardando execuções provisórias e ordens nas tumbas sem imunidades perante as varas das investigações estatais em porões do passado na organização de defesa criminal da justiça no seu tempo de controle repressivo nas sociedades"],
+          ["Instrução Probatória Dolorosa", "Legalidade sistemática da violência procedimental instruindo torturas rotineiras atestadas papiro por papiro com espancamentos nas hastes duplas supliciando pulsos torsões não letais como etapa lícita de praxe do magistrado de arrancar as ocultações tesouros confessões aos prisioneiros perante julgamentos pátrios por furtos ou subversão aos palácios sendo oficializada sem clemências nas arenas e varas das cortes com os carcereiros reais aplicando inquéritos coercitivos brutais com sentenças atestadas por notários e registradas nas declarações judiciais na antiguidade repressiva sem complacências constitucionais do estado perante quadrilhas desbaratadas nos casos notórios de saques e profanações de sepulturas com punição institucional no terror oficial em inquéritos policiais sem proteção a integridade nas justiças estritas do país milenar nas masmorras das vilas sem misericórdia nas varas de interrogatório final"],
+          ["Indulto e Remissão Festiva", "Mecanismo diplomático processual absolutista concedendo benevolência perdoando em épocas jubilares soltando condenados não capitais extinguindo débitos de sangue nas efemérides dos ciclos reais na elevação dos reinos atestando generosidade aliviando as superlotações restaurando concórdia nos ritos das nações das margens unidas pacificando descontentamentos no tecido civil através de libertação perante as praças dos templos como a graça imperativa da bondade pátria superior cancelando as penas impostas do pretérito criminal de multidões nas correntes e submetidos perante as graças do governante em jubileus festivos nas áreas da civilização garantindo devoção popular sem o derramamento inútil de sangue e a submissão carcerária eterna na misericórdia oficial da autoridade maior nas anistias do país em momentos singulares na história legal de governo absoluto perante os ritos da coroa festiva da humanidade antiga do norte no vale florido"]
+        ];
 
-          const [pool, setPool] = useState([]);
-          const [activeCard, setActiveCard] = useState(null);
-          const [status, setStatus] = useState('idle'); 
-          const [draggedOver, setDraggedOver] = useState(null);
-          
-          const [feedback, setFeedback] = useState(null); 
+        const MESO = [
+          ["Código de Hamurabi", "O mais célebre conjunto de leis da antiguidade, gravado em um bloco de basalto negro contendo 282 cláusulas com castigos exatos."],
+          ["Código de Ur-Nammu", "O código de leis mais antigo já encontrado pelos arqueólogos, antecedendo e inspirando legislações posteriores que utilizavam penas em prata e multas em vez do puro revide corporal corporativo."],
+          ["Código de Lipit-Ishtar", "Antigo conjunto de leis arcaico que regulava amplamente e com precisão o status protetivo dos escravos com débitos, casos minuciosos de heranças testamentárias e os direitos protetivos em contratos de adoção simulada familiar."],
+          ["Leis de Eshnunna", "Conjunto ancestral de leis rústicas anteriores aos grandes impérios e que trazia uma tabela econômica rigorosa fixando legalmente preços máximos em pesos de bens de consumo, além de teto para aluguéis mensais e salários diários."],
+          ["Lei de Talião", "Famoso princípio jurídico inegociável da retribuição corporal estrita e simétrica, em que a punição espelha violentamente e sem compaixão o exato dano ('olho por olho', membro por membro cortado no executor) infligido à vítima primária inocente do ato originário impensado do condenado culpável sob pena capital se fosse reincidente contumaz nas cidades."],
+          ["Reformas de Urukagina", "A mais remota e antiga intervenção legislativa estatal e de propaganda registrada visando erradicar a corrupção de sacerdotes, reestruturar o fisco e proteger viúvas, órfãos desamparados e endividados frágeis de extorsões diárias de magistrados gananciosos em províncias sob tirania e escravidão."],
+          ["Kudurru", "Monólitos pesados e impenetráveis ou estelas de pedra bruta esculpidas meticulosamente com temíveis símbolos divinos celestiais e maldições proféticas escritas, cravadas para registrar e proteger eternamente em foros fiduciários concessões reais inalienáveis de terras agrícolas em doações a grandes generais e sacerdotes intocáveis dos palácios no reino antigo das águas barrentas do sul."],
+          ["Ordalha do Rio", "Método insondável e religioso do julgamento mágico ou divino letal de exceção onde suspeitos sem provas contundentes de feitiçaria caluniosa intencional ou adultério não atestado eram lançados amarrados e pesados às correntezas profundas do deus das águas aguardando que o destino afogasse o culpado atestando culpa ou flutuasse absolvendo a inocência do acusado perante clérigos magistrados juízes da urbe na beira margem com sentenças sem revogação do veredicto transcendental emitido no tribunal líquido da natureza."],
+          ["Tabuletas de Argila", "O venerável suporte físico legal inquestionável cru e pesado exigido perante as cortes para que qualquer contrato mercantil, de união ou testemunho fosse considerado plenamente válido sem dolo pelo juízo civil gravado com um punção perante chancelas e cozido para permanecer inalterável sob as penas nos arquivos perante os séculos nos santuários e templos cartoriais da justiça."],
+          ["Selos Cilíndricos", "Pequenas e intrincadas matrizes perfuradas de pedra entalhada giratórias usadas individualmente por cada cidadão nobre ou comercial no pescoço para 'assinar' incontestavelmente de forma criptografada documentos judiciais e privados rolando na argila úmida atestando assim presença, vontade, consentimento e fiabilidade para sempre nos processos imobiliários transacionais mercantis e divinos do passado e sem as quais nenhuma lei faria efeito e sem falsificações comuns nas fraudes contratuais e mercantis da nação."],
+          ["Awilum", "A cúpula da elite cidadã: a classe jurídica hierárquica superior de homens livres e plenos, cujas propriedades, vidas e orgulho possuíam os maiores direitos, mas curiosamente que também recebiam e aplicavam para seus pares as penas corporais violentas mais dolorosas da retribuição espelhada atestando status social igual no revide."],
+          ["Mushkenum", "A grande massa trabalhadora submissa: o estatuto jurídico amplo intermediário e flexível dos dependentes do palácio, servos agregados e semi-livres rurais ou das ruas, que não possuíam privilégios altos mas que tinham em seu favor, ao invés da retribuição bárbara, compensações puramente financeiras atenuadas como penas em casos concretos."],
+          ["Wardum", "Estatuto legal jurídico singular da escravidão comercial ou de guerra na antiguidade dotado curiosamente da característica civil tolerante de permitir expressamente na lei que o escravo acumulasse suas próprias fatias de riquezas mobiliárias, tivesse pequenos negócios lucrativos independentes e pudesse casar impunemente com pessoas integralmente livres do império sem perder suas posses no matrimônio forçado e misto das linhagens antigas."],
+          ["Ensi / Patesi", "O título místico supremo originário do líder e administrador burocrático, do governante máximo encarnando na pessoa o venerável rei-sacerdote ungido, considerado legalmente em todos os processos criminais e civis apenas como legislador terreno transitório, pois era tido legalmente e sem discussão como mero administrador submisso das grandes e ricas fazendas sagradas pertencentes a deuses imortais padroeiros da terra sem poder reverter as leis impostas pelos tribunais dos deuses maiores e leis pétreas incontestáveis."],
+          ["Tirhatu", "O contrato essencial impositivo e prévio de 'preço da noiva e noivado garantido', um depósito ou pagamento nupcial vultoso patrimonial obrigatório essencial aos nubentes em forma de garantias para oficializar perante cartórios e noivas a compra, transferência e o casamento vinculativo pleno com as filhas herdeiras protegendo no enlace arranjado as expectativas contra eventuais repúdios ou recusas dos genitores desonestos."],
+          ["Adoção Fictícia Imobiliária", "Estratagema e ficção jurídica ardilosa de grande frequência no meio agrário cartorário, idealizada e utilizada ostensivamente nos registros legais das vendas dissimuladas, criada pelos tabeliões de província exclusivamente para driblar a fúria das proibições inarredáveis da tradição e as leis duras religiosas que não autorizavam, sem punições de sangue as famílias tradicionais vender terras das heranças inalienáveis, convertendo artificialmente o investidor como sendo adotado legalmente nas cortes."],
+          ["Talião para Falso Testemunho", "Preceito gravíssimo do código de penas estabelecendo regra implacável e amedrontadora da lei que condenava e executava imediatamente a própria testemunha mentirosa exatamente com a mesmíssima dor corpórea gravíssima que o denunciado inocente viria inevitavelmente a sofrer nas prisões, caso os fatos provados no fórum desmentissem nos autos e apurações sem apelações a perfídia do caluniador flagrado durante inquéritos nas cidades muradas."],
+          ["Repúdio e Devolução de Dote Conjugal", "A permissividade patriarcal legal extrema assegurando um amplo direito irrestrito sumário sem defesas das cortes permitindo divórcios, abandonos e desfazimentos marciais rápidos nas assembleias sob mera palavra, condicionado rigorosamente de fato a obrigação e peso financeiro irrevogável por parte do requerente a dever desembolsar e devolver com pesadas indenizações e remessas totais aos cofres antigos e à desposada, todo capital ou quantia fiduciária que recebera nas núpcias das praças na juventude, garantindo sustento das famílias rechaçadas na lei das comunidades camponesas ou urbanas e justiça social compensatória e pecuniária para evitar a mendicância civil de mulheres divorciadas abandonadas e não amparadas com proles famintas."],
+          ["Tabelamento Naval Mercantil", "Disposições fixadas nos códigos civis governamentais definindo estritamente as amarrações nos preços nas margens portuárias para os comerciantes definindo tabelas diárias nas praças das locações impositivas das ágeis embarcações fluviais por volumetria de cargas proibindo extorsões e ganâncias sem controle e estipulando garantias na contratação dos tripulantes nos fretes de grande importância com sanções para danos e roubos nos cascos e nas margens, servindo como o primeiro manual legal oficial da justiça náutica comercial da antiguidade nos rios que banhavam todas as fronteiras nos sistemas burocráticos imperiais prósperos sob multas financeiras judiciais ou a perda sumária dos navios."],
+          ["Tarifação Compulsória dos Artesãos e Médicos", "Estatuto imperial das normas fixas civis imposto pelas pranchetas das capitais da era que congelava a indexação na balança nos pagamentos dos contratos salariais estipulando que o dia suado no pó por pedreiros os ganhos dos oleiros ceramistas artífices estariam e seriam fixos nos limites diários em prata nos meses estabelecidos sem abusos nem barganhas visando as manutenções das estruturas do desenvolvimento e das obras arquitetônicas cívicas do reinado sem interrupções e sem revoltas de operários mal pagos nos salários, garantindo uma rede de ordem social em todos os distritos periféricos com a remuneração certa nas moedas e víveres diários estabelecidos nas pedras nos muros e monumentos legislativos das comarcas antigas sob sentenças para eventuais calotes ou infrações."],
+          ["Corte das Mãos pela Responsabilidade Médica", "Punição de responsabilidade cirúrgica assustadora atestada legalmente pelas estelas punitivas com a pena corpórea sem perdão das chancelas caso nas aberturas graves ou sangrias arriscadas usando instrumentos metálicos não propiciassem curas gerando a fatalidade morte para escravos com restituições e na nobreza a mutilação violenta e extirpação em público nos átrios com as mãos e instrumentos cirúrgicos para o médico incompetente perante a corte punindo de forma espelhada a falta técnica da responsabilidade e curandeirismos mortais no império com terrorismo punitivo no corpo civil, extirpando licenças das guildas."],
+          ["Morte do Filho do Construtor Culpado", "Cláusula macabra da culpa e punições transversas para as áreas urbanas na história cível da construção fixando norma drástica que perante um telhado inseguro ou pilar caindo, no soterramento mortífero nas vias das casas com danos no herdeiro da residência a sentenciada aplicação retributória espelhava cruelmente as vidas sem poupar a descendência recaindo as garras punitivas e execução direta as custas nas vidas do filho mais velho ou prole paralela idêntica do engenheiro e artesão negligente para saciar as perdas proporcionais exatas das justiças e leis impiedosas corporais da equidade absurda no entendimento retribuitivo extremo sem dó com atestações das assembleias dos sábios ou juízes sem misericórdia, num período severo de repressão criminal aos delitos com culpa no povo rústico do passado."],
+          ["Perdão e Moratória Rural por Temporais", "Dispositivo previdenciário e legal das isenções humanitárias das cortes protegendo doações perante aos lavradores estipulando no código perdões absolutos dos impostos débitos juros não executando nos credores ou nos hipotecados a desgraça das masmorras suspendendo as exigibilidades de prata ou feixes quando o mau tempo nas safras destruíssem pelas secas nas barragens ou tempestades violentas todo ou partes das glebas colhidas na exação fiscal como socorro no ano judicial atípico impulsionando subsistências camponesas e impedindo extermínio e falência geral do operariado na máquina rural agrícola do governo nos milênios pretéritos da história antiga no território civil sob leis sábias, piedosas do monarca das leis agrárias perante crises ecológicas nos limites rurais."],
+          ["Indenização Financeira pelo Boi Chifrador", "Normatização cível agrária engenhosa instituindo a teoria de acidentes previsíveis estatuindo punição reparatória perante desastres obrigando na cidade os donos avisados legalmente e notificados por vizinhos em audiência cujas rezes ou rebanhos furiosos furassem camponeses não lhes decepando na raiz nas aspas dos animais agressivos gerando óbitos, a honrar as sentenças e a cobrir compulsoriamente os sepultamentos pagando nos tribunais com pesados siclos nos tesouros familiares vitimados ressarcindo toda extensão da imprudência na ausência nas prevenções dos perigos nas aldeias e pastoreios daquele tempo para garantir paz social nas planícies agricultáveis e rebanhos da civilização."],
+          ["Teto Legal e Alforria na Escravidão por Dívida", "Medida cautelar das clemências inseridas pelo redator da justiça antiga estipulando limites temporais humanitários de que se algum infeliz cidadão atolado não tivesse condições leiloando por força dos credores seu conjugue seus rebentos perante fiadores aos trabalhos forçados sem remuneração não perdessem liberdade perpétua na condição submissa, libertando-se os cativos endividados rigorosa e incontestavelmente nos jubileus restabelecidos após três laboriosos anos inteiros devolvendo lhes plenos gozos das autonomias de liberdade restabelecendo as propriedades originárias no lar cívico desfazendo sem maiores penas na praça o título possessório do opressor fiduciário na época estritamente material nas províncias de negócios mercantis nos primórdios no berço milenar social do legislador."],
+          ["Naditu Empreendedoras", "Uma casta autônoma feminina e aristocrática eclesiástica privilegiada apartada na lei dos lares da família tradicional residindo em enclausuramentos seculares que por abstenções da gestação possuíam amparo nas assembleias detendo fortunas amplas na sua independência investindo no exterior capitais agindo corriqueiramente nas ruas como banqueiras credoras donas em feitorias compradoras e agentes rurais influentes não tolerando no conselho a submissão aos maridos atestando emancipação e lideranças empresariais nos pergaminhos e tribunais imobiliários dominando e comprando em massa as chancelas mercantis de rotas num mundo patriarcal rígido de dominância masculina nos códigos vigentes e regras opressoras normais para a grande massa feminina de sua era antiga nas fronteiras do norte ou sul imperial."],
+          ["Karum dos Mercadores", "Instituição mercantil independente fora das fronteiras e muros de proteção da nação operando rotas de comboios nas serranias distantes gozando isenções e poder de lei na extraterritorialidade presidida em conselhos por grandes atacadistas exercendo sem amarras nas comarcas do rei a dupla missão bancária punitiva das fraudes e arbitragens perante os conflitos do transporte com multas nas cortes de comércio internacional que cobrava os contratos em caravanas de carregamentos asilo diplomático e faturamentos com regras estritas para garantir transações lucrativas intercâmbios e riquezas fluentes pacíficas sem litígios insolúveis sem as presenças do palácio central das leis nas praças e assentamentos de forasteiros e mercadores nos vales, mantendo justiça entre parceiros nos negócios remotos."],
+          ["Mutilação das Mãos pela Agressão Paterna", "Ordem suprema disciplinar inflexível instituída nas penalidades extremas punindo sem perdões as revoltas filiais e a ingratidão intrafamiliar na qual a descendência perversa ou insolente perante aos testemunhos que perpetrasse com ódio golpes e dores em espancamento violento ou ultrajes corporais ferindo sem mortes genitores atestando sacrilégio familiar as cortes obrigariam sentenciando sem demoras nos tribunais com a pronta amputação nas tábuas e guilhotinas com decepamento violento punitivo perante as turbas punindo a mão culpada garantindo a obediência absoluta nos lares sob a proteção cega patriarcal dos impérios punindo nas mãos culpadas de sangue a transgressão irretratável das leis básicas e reverência no cotidiano civil do povo com penas brutais inalteráveis."],
+          ["Morte Soterramento para Arrombamento Urbano", "Medida punitiva imediata bárbara e exemplar cominada especificamente nos casos dos gatunos rasteiros furtivos violadores assaltantes e ladrões nos guetos apenados e executados pelo populacho nas ruelas com sanções imediatas que caso surpreendidos fazendo cavidades nas paredes de adobes ou de barro e invadindo lares pelo breu da noite não seguiriam à corte mas pereceriam sufocados enterrados nas cumbucas da mesma alvenaria que destruíram numa morte atroz emparedados sem julgamento perante juízos do monarca servindo em definitivo aos curiosos o horror das lições sumárias nos crimes hediondos na criminalidade suburbana dos reinados da civilização antiga repressora sem defesa da integridade dos acusados confessos."],
+          ["Morte Implacável no Fogo de Saqueadores de Incêndios", "Condenação sumaríssima de letalidade atroz para oportunistas em tragédias, onde a legislação não tolerando as misérias dos bandos estipulava que criminosos astutos que adentrando em residências nas chamas para oferecer supostos auxílios a família flagelada fossem pilhados usurpando o mobiliário salvo deveriam sem as protelações nos interrogatórios ser precipitados atirados e queimados pelo juiz da corte ou prefeitos aos pés das mesmas chamas purificadoras nas labaredas sem sepultamento em expiação capital as divindades pelas ignomínias imorais contra o povo desesperado e o pacto civil da paz no domínio das urbes organizadas punindo saqueadores em época de pânico e hecatombes naturais com crueldade letal perante justiças de multidões."],
+          ["Execução por Afogamento Compulsório de Adultério Flagrante", "Determinação penal passional na lei cruel punindo sem trégua aos delitos da devassidão perante concubinas traidoras estipulando no julgamento ou fúria do próprio consorte flagrado nos leitos as execões obrigatórias conjuntas afogando sem defesa ambos acorrentados ou presos sendo lançados violentamente nas correntezas fluviais garantindo absolvições apenas se excepcionalmente na misericórdia improvável do ofendido marido se perdoasse abertamente nos processos a esposa mas cuja lei geral requeria morte dupla e expiação purificadora na natureza ao invés da fogueira ou chibatas atestando um domínio masculino opressor possessivo moral inquestionável nos códigos patriarcais de retribuição capital da civilização antiga punitiva em casos provados no estado submisso às honras intocáveis do patriarcado."],
+          ["Guarda Tutelar de Aprendizado nos Contratos Familiares", "Avançadíssima previsão das diretrizes sociais civis e regulamentos nas proteções de acolhimentos legais estatuindo e vinculando os mestres ferreiros entalhadores e donos de corporações numa obrigatoriedade forçosa que ao registrarem nas pedras acolhendo infantes miseráveis abandonados no aprendizado e nos tetos ficariam sujeitos às auditorias nos conselhos e caso não transmitissem todas aptidões das artes e do labor produtivo a adoção fracassava devendo retornar à rua sem ressarcimento não permitindo servidões abusivas nas falsas escolas nas comarcas garantindo o ensino laboral estrito no império protegendo a base das forças ativas da nação e as profissões repassadas nas regras justas com sanções caso violadas nos acordos perante tribunais regionais de justiça."],
+          ["Regulação Mortal das Tabernas por Mulheres", "Estatuto estrito e controlador imposto no código recaindo sobre as gerentes autônomas nos bares populares fornecedores das beberagens fermentadas estipulando proibições pesadas por motins políticos reuniões conspirações ou traições se organizassem em seus recintos e caso descobertas se escondessem ou acobertassem sediciosos golpistas amotinados nos porões sem as denúncias incontinentes e entregas as justiças do pátio a hospedeira das taças viria sentenciada com o fuzilamento capital as mortes expiatórias nas lâminas do império servindo em repressão às sublevações e garantia da coroa ditatorial atestando também restrição e policiamento rígido ao universo autônomo e de encontros não santificados das praças mundanas na antiga terra clássica controlada sob as ordens e fiscalizações severas com condenações à guilhotina da coroa absolutista sem negociação penal no Estado das províncias regionais"],
+          ["Severidade do Repúdio Extremo ou Óbito contra Tabus Consanguíneos", "Normas drásticas familiares impostas nos tribunais pátrios vedando radicalmente contaminações dos sangue profanadores impondo as exclusões punições perpétuas sentenciando as expulsões as forcas e a fogueiras crematórias irrecorríveis das instâncias purificando as vergonhas íntimas se consumados parentescos proibidos no íntimo, como relações abomináveis provadas flagrantes com irmãos e filhas expiadas com a dor capital sem escapes e os banimentos absolutos no exílio aos laços atenuados e madrastas atestando controle ético biológico e severidade das varas punindo as infâmias no código da justiça estatal e controle sexual religioso de seu império com tradições patriarcais opressivas nas antigas sociedades"],
+          ["Plenitude Sucessória das Servas e Filiações Adulterinas Reconhecidas", "Preceito permissivo nas tolerâncias das sucessões cíveis patrimoniais que asseguravam no direito material sem exclusões da herdeira primária em que as esposas submissas ou escravas geradoras das proles secundárias fossem alforriadas definitivamente aos passamentos mortuários do líder patriarca admitindo que, se chamados e reconhecidos com clareza nos tribunais em vida verbalmente ou em argila e selos pelo genitor e chefe dos bens perante testemunhos de cortes e conselhos as heranças seriam repartidas isonomicamente equiparando nas fatias todos filhos naturais com garantias e quotas da justiça da civilização antiga sem opressão filial ou disputas litígios nas sentenças em apelação contra herdeiros secundários da linhagem mista no passado"],
+          ["Leis Impiedosas das Terras Médias Nortenhas (Assíria)", "Uma formidável coleção bárbara, violenta das punições penais de um império formidavelmente militar infame por ser incrivelmente sádica implacável extremada farta em açoites estupros penais torturas inomináveis castrações nas normatizações opressoras cruéis aos escravizados as conquistas impondo submissão amedrontadora as mulheres em grau nunca visto as quais restavam propriedades dos lares escravizadas na moral da corte destituídas dos ganhos em leis machistas opressivas garantindo obediência civil pela espada e pela mutilação legal nas sentenças das províncias da nação beligerante com punições drásticas e impiedosas em recintos sem a clemência do código das épocas antigas nos reinados orientais do primeiro império de violência irrestrita dos conquistadores do pólo de dominação do mundo antigo das cidades muradas."],
+          ["Mutilação Facial Judicial Punitiva e Olho por Olho Ocular", "Aplicabilidade da justiça através chibatas cruéis arrancamentos e decepamento brutal sistemático onde infrações penais ou mesmo faltas em testemunho resultavam aos transgressores nas lâminas quentes e no cepo e cortes dilacerantes nos lábios narizes rasgados nos veredictos ou dedos perante todos na feira para que as atrocidades cometidas pelas marcas deformantes eternas ficassem como crachá expiatório inibitório para futuros usurpadores da ordem pública das comarcas aterrorizando nações cativas sem tolerar insurreições, estupradores e corrupções institucionais a mando de imperadores militaristas sem remorso nos massacres no oriente arcaico sob leis de crueldade de sangue para pacificação pelas chamas das execuções bárbaras nos pátios das urbes dominadas pelas falanges de juízes dos reinados sangrentos antigamente."],
+          ["Obrigatoriedade e Privilégio Social do Véu Feminino", "Instituição mandamental da pureza na sociedade da época com penas ditadas as classes exigindo formalmente na via pública a vedação cobertura velamento obrigatório dos ombros testas bocas das figuras puritanas castas esposas plenas viúvas senhoras da nobreza sinalizando aos pervertidos as superioridades atestando o não incômodo inviolável e blindagem da reputação sob pena e multas nas quebras, um símbolo imposto as cativas das cidades como código de submissão casta opressivo na era e que demarcava as distâncias das castas respeitáveis na lei perante os cortes e juízes que castigavam no império das tradições militares nos domínios vastos do norte asiático sob jugo patriarcal imposto as famílias sob ameaça real da coroa imperial nos tempos remotos antigos."],
+          ["Proibição do Véu para Prostitutas e Escravas Falsárias", "A repressão simétrica nas transgressões sumárias com espancamento violentíssimo público quinhentas bordoadas castigos nos queixumes de óleo ou pixe derramados para a servil escrava libertina prisioneira que audaciosamente se atrevesse em transgressão disfarçar a condição rebaixada utilizando vestes adereços dos véus cobrindo crânio enganando os oficiais, sendo o adereço banido no código penal visando atestar perante os vigias cívicos expurgo e demarcação nas fileiras de quem não era nobre nos patamares dos reinados e do Estado puritano e guerreiro mantendo castas e aparências com brutalidade judicial e penas punitivas para controle severo da sociedade das antigas muralhas no norte do golfo em sua época obscura sem isonomia nas praças nos fóruns."],
+          ["Tratados Internacionais de Vassalagem Abominável e Terror", "Avançadíssimo formato extorsionário dos contratos bélicos da chancelaria onde imperadores expansionistas impunham alianças sangrentas escravizantes firmadas por maldições juramentos assombrosos descrevendo minuciosamente nos rolos profecias nas quais rebeliões sedições faltas dos pagamentos em ouros anuais e provisões iriam garantir pragas divinas empalamentos de massa, violências e o esmagamento implacável da cidade estado perdedora subjugada para aniquilar as confederações em alianças inquebrantáveis de guerra na dominação geopolítica diplomática do pavor militar e jurídico das regiões férteis da crescente terra dos impérios expansionistas na história com documentos originais impositivos aos povos subalternos escravizados nas eras pregressas dos primeiros e vastos generais e seus reinados ditatoriais com imposições legais extorsivas ao sul no continente vizinho ao longo de vales distantes"],
+          ["Éditos Cívicos de Remissão de Dívidas (Misharum)", "Pausas econômicas extraordinárias, tábua rasa e anistias nos decretos governamentais das justiças que eram lançados nas inaugurações cerimoniais no trono recém assumido onde monarcas rasgavam débitos de camponeses libertavam sem custas reféns de dívidas destruindo registros fiduciários dos agiotas e quebrando argilas contábeis impedindo concentração bancária nos templos permitindo reinício econômico nas classes baixas aliviando extermínio falimentar dos súditos para sustento de sua coroa com a benesse civil do estado nas esferas de litígios rurais de juros e multas anuladas como perdão divino e proteção social legalmente instituída como propaganda do poder reinante das leis justas de proteção da equidade nos vales e impérios antigos nas revoluções de juros abusivos das praças do estado das nações submissas e suas capitais nos períodos cíclicos das dinastias imperiais"],
+          ["Feudos Militares Inalienáveis e Ilkum", "Territórios agrícolas provisões estatais inegociáveis doadas aos guerreiros, um modelo originário feudal nas províncias distribuídas em troca ininterrupta aos braços armados pela obrigação do sangue do alistamento estipulando defesas do muro, que de forma absoluta proibia as transações negociais imobiliárias para bancos e dívidas para proteção garantida da milícia e suas fontes perante agiotas das capitais mantendo o império sustentado belicamente e juridicamente assegurado pela lei nas proibições cíveis com regras que blindavam bens estatais essenciais nos tribunais contra apelações em penhoras nas cobranças e alienações dos foros judiciários protegendo soldados dos endividamentos no sistema legal de impérios militaristas sob legislações da guerra e ordem no mundo de litígios na proteção camponesa nas regiões pacíficas ou submissas do passado guerreiro com ordenamento perfeito da coroa e exército garantidos nos domínios"],
+          ["Redum e Bairum Privilégios da Base Castrense", "Atestados legais de categoria especial nas guardas blindando e isentando em audiência todos as propriedades os pequenos infantes recrutados tropas de soldados rasos contra as covardes pilhagens nos rebanhos raptos, abusos apropriações indébitas praticadas nos butins de campanha por magistrados e coronéis superiores, cuja denúncia acarretaria nas decapitações executivas perante o rei sem piedade nos pátios caso comprovadas violações aos pertences dos defensores do império no período punitivo, promovendo disciplina bélica moral de classe intocável nas comarcas rurais garantindo as patentes sem exploração na hierarquia inferior sob supervisão em fórum perante escrivães da nação com justiças severas do código nos tribunais imperiais centralizados nas capitais para justiças aos subordinados ofendidos e malogrados perante opressores fardados nas linhas guerreiras de época em punições implacáveis das varas dos conselhos militares"],
+          ["Punibilidade Aquática por Feitiçarias e Calúnias Obscuras", "Previsões litúrgicas inescrupulosas sem defesas materiais ou testemunhos perante crimes onde provas falham decretando aos mágicos lançadores de preces maldições ocultas envenenamentos suspeitos submetê los a prova definitiva fatal atirando o sentenciado amarrado para sobrevivência mágica nos braços tempestuosos do Eufrates validando absolvição improvável e provando culpas se as lamas soterrarem nos leitos perante deuses dos rios do estado imperial nas justiças sem trâmites e recursos baseada no pensamento punitivo arcaico religioso em sentenças cruéis sem instâncias de apelações no rito ordinário nas margens perante clero em vilas supersticiosas no passado na proteção cívica contra curandeiros perigosos julgados sumariamente ao afogamento perante as nações regionais nas lendas punitivas passadas em milênios da ignorância penal punitiva nas culturas extintas de opressão na lei dos deuses de sua civilização remota sem provas irrefutáveis exigidas para os julgamentos dos fóruns e prefeitos antigos nas regiões do norte longínquo das areias nas praças e varas primitivas rurais e templárias da história humana"],
+          ["Tapputum da Responsabilidade Compartilhada", "Disposições do ramo civil regulamentadas meticulosamente estipulando formalidades regras de conduta sociedade por responsabilidades mútuas fixando nas placas acordos percentuais justos nos lucros nas divisões equânimes dos perigos despesas perdas saques nas estradas piratarias para expedições dos sócios financiadores em empreendimentos mercantis ao exterior chanceladas pelas guildas com proteção das capitais blindando acionistas primitivos das injustiças apropriações indébitas em falências nas praças de importações longínquas validando contratos sob juízos e garantias fiduciárias mercantis nas regiões centrais de escoamento no berço pioneiro das feiras corporativas atestando jurisprudências do ramo do comércios prósperos nas viagens das eras de prosperidades dos povos entre dois rios sagrados na era clássica da antiguidade em evolução contratual da nação sob governo organizado de tabelionatos justos sob sentenças atestadas nos escritórios reais"],
+          ["Limites Fiscais na Extorsão de Juros Pessoais", "Preceitos normativos econômicos blindadores da prosperidade impedindo nas tábuas abusos agiotas determinando para empréstimos percentuais não maiores restritos à fixação teto legal inflexível dos tribunais tolerando no máximo acréscimos das permutas argentíferas de um quinto anuais do total nas dívidas financeiras em prataria enquanto para sementes não passaria sob lei sob pena processual multas o limite taxado máximo em um terço das medidas coibindo ganância atestando estabilidade no capital rural no povo impedindo falências e êxodos nos períodos rústicos na história e nas sentenças de execções nas varas sob inquéritos de vizires em justiças punitivas às cobranças coercitivas sem amparo documental dos mercadores com confiscos de bens garantidos na história do governo estatal da região na antiguidade sob reinados das monarquias em crescimento civil contínuo para evitar as explorações rurais de usurários no crédito campesino de outrora"],
+          ["Dayanum Justiças Civis Nomeadas", "Ascensão dos leigos no judiciário onde o magistrado eleito real não eclesiástico juízes das praças centrais laicos selecionados nas cortes imperiais assumiam poder nos tribunais apartados dos sacerdotes desvinculando religião em fóruns substituindo nos conflitos ordinários heranças débitos e pequenos furtos os vereditos das sentenças templárias por resoluções puramente racionais em comarcas das ruas atestando profissionalismo burocracia laicidade gradativa de instâncias estatais não dogmáticas com apelações diretas ao monarca em capitais no avanço do ramo processual cível da justiça na civilização e suas províncias nas reformas de governo no centro e bairros da capital fortificada sob império da ordem legal das eras dos imperadores e justiças no paço do supremo dos territórios de poder unificado na antiguidade para litígios seculares nos prefeitos e juízes sem batina dos deuses com tribunais perante as multidões e sentenças laicas na região com ritos e provas documentais exigidas pelas varas na organização da vida em litígio nas cidades"],
+          ["Rabiānum na Reparação Objetiva Prefeitoral", "Ordem suprema do código impiedosa que obrigava de forma pecuniária perante ineficácia e falta de proteção pública os prefeitos executivos nomeados da cidade cobrindo de seus soldos fiduciários ressarcimento à quem quer forasteiro furtado na rua sem resolução e apreensão do bandido e restituição não alcançada perante as lides, imputando solidariedade financeira ao administrador pela insegurança do território servindo as reparações das falhas do estado aos donos das propriedades lesadas sob garantias de reposições das nações antigas forçando eficiências policiais em vigilâncias com a falência eminente dos burocratas omissos nos processos indenizatórios provados as autoridades da corte real do império em atestações juramentadas do prejuízo sofrido nas cercanias no mundo brutal do estado militarista sem desvios na época passada nas justiças compensatórias aos roubos nas varas rústicas e tribunais antigos com o rigor nas sentenças monárquicas para autoridades com mandatos no povo da antiguidade sem absolvição nas faltas com os ofendidos cíveis"],
+          ["Puhrum Tribunais Conselheiros Democráticos", "Órgão consultivo decisório rústico coletivo sobrevivente das antigas castas e aldeamentos perante a expansão das grandes cidades formado nas praças pelos respeitáveis homens mantendo funções julgadoras assembleares arbitrais resolvendo perante todos as disputas pequenas divórcios adultérios traições sem chancelas e instâncias burocratizadas ou escribas ditando normatizações em processos nas ruas com deliberações em votos consensuais de penalizações sumárias executivas na ausência ou supressão temporária de magistrados maiores nas vilas periféricas da glória mantendo pacificação ritos tradicionais sem burocratização com força e imposição nas lides menores civis dos bairros das urbes nas justiças originárias na aurora dos assentamentos em comunhão dos conselhos de época remota na antiguidade nos sistemas paralelos dos reinos e nações pacíficas na região sem derramamento letal de sangue para desavenças de honra locais resolvidos com as testemunhas do povo nos dias de sentenças nos fóruns orais das praças de comércio diário sem sentenças de palácio ditatorial supremo"],
+          ["Exigência Fatal Fiduciária de Testemunhos em Permutas", "A exigência processual gravíssima e sem tolerância das testemunhas ditadas em leis onde negociações verbais depósitos empréstimos sem as tabuletas inscritas acompanhadas presencialmente sob visões de fiadores imparciais caracterizava ato furtivo, presumindo fraudulência estelionatos convertendo imediatamente nas sentenças de execução sem tréplica o fiador informal devedor mal intencionado num fora da lei passível nas mãos do executor a fuzilamentos forcas fogueiras atestando nas punições letais a segurança comercial das escritas e de garantias cartoriais da praça num rigor absoluto pela manutenção legal nas corporações mercantis nos vales da sociedade na evolução transacional sem calotes e confianças fúteis do mercado e feiras de outrora sob leis punitivas definitivas do estado real no comércio em larga escala de provisões dos tribunais sob justiças inalienáveis em transações comerciais na era documentada em papiros ou cerâmica com força de verdade incontestável dos ritos"]
+        ];
 
-          const handleAddTeam = () => {
-            if (teams.length < 3) {
-              setTeams([...teams, { id: Date.now(), name: `Equipe ${teams.length + 1}`, score: 0, errors: 0 }]);
-            }
-          };
-
-          const handleRemoveTeam = (id) => {
-            if (teams.length > 2) {
-              setTeams(teams.filter(t => t.id !== id));
-            }
-          };
-
-          const updateTeamName = (id, newName) => {
-            setTeams(teams.map(t => t.id === id ? { ...t, name: newName } : t));
-          };
-
-          const startGame = () => {
-            const resetTeams = teams.map(t => ({ ...t, score: 0, errors: 0 }));
-            setTeams(resetTeams);
-            setPool(shuffleArray(COMPETENCIAS));
-            setActiveCard(null);
-            setStatus('idle');
-            setCurrentTeamIndex(0);
-            setFeedback(null);
-            setGameState('playing');
-          };
-
-          const backToSetup = () => {
-            setGameState('setup');
-          };
-
-          const drawCard = () => {
-            if (pool.length === 0) {
-              setGameState('finished');
-              return;
-            }
-            const newPool = [...pool];
-            const nextCard = newPool.pop();
-            setPool(newPool);
-            setActiveCard(nextCard);
-            setStatus('idle');
-          };
-
-          const advanceTurn = () => {
-            setCurrentTeamIndex((prev) => (prev + 1) % teams.length);
-            if (pool.length === 0) {
-              setGameState('finished');
-            }
-          };
-
-          const handleGuess = (guess) => {
-            if (!activeCard || status !== 'idle') return;
-
-            const isCorrect = activeCard.resposta === guess;
-            setStatus(isCorrect ? 'correct' : 'wrong');
-
-            if (isCorrect) {
-              setTeams(prev => prev.map((t, i) => i === currentTeamIndex ? { ...t, score: t.score + 1 } : t));
-            } else {
-              setTeams(prev => prev.map((t, i) => i === currentTeamIndex ? { ...t, errors: t.errors + 1 } : t));
-            }
-
-            setTimeout(() => {
-              setFeedback({
-                type: isCorrect ? 'correct' : 'wrong',
-                card: activeCard
-              });
-            }, 800);
-          };
-
-          const handleNextTurn = () => {
-            setActiveCard(null);
-            setStatus('idle');
-            setFeedback(null);
-            advanceTurn();
-          };
-
-          const handleDragStart = (e) => {
-            if (status !== 'idle') e.preventDefault();
-            e.dataTransfer.setData('text/plain', activeCard?.resposta);
-          };
-
-          const handleDragOver = (e, bucketName) => {
-            e.preventDefault();
-            if (status === 'idle') {
-              setDraggedOver(bucketName);
-            }
-          };
-
-          const handleDragLeave = () => {
-            setDraggedOver(null);
-          };
-
-          const handleDrop = (e, bucketName) => {
-            e.preventDefault();
-            setDraggedOver(null);
-            handleGuess(bucketName);
-          };
-
-          if (gameState === 'setup') {
-            return (
-              <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans">
-                <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
-                  <div className="flex items-center justify-center gap-3 mb-6">
-                    <Users className="w-8 h-8 text-blue-600" />
-                    <h1 className="text-2xl font-black text-slate-800 uppercase text-center">Configurar Equipes</h1>
-                  </div>
-                  <p className="text-slate-500 text-center mb-6 text-sm">Jogue com 2 ou 3 equipes. As rodadas serão alternadas.</p>
-                  <div className="space-y-4 mb-6">
-                    {teams.map((team, index) => (
-                      <div key={team.id} className="flex items-center gap-2">
-                        <span className="font-bold text-slate-400 w-6">{index + 1}.</span>
-                        <input 
-                          type="text" 
-                          value={team.name}
-                          onChange={(e) => updateTeamName(team.id, e.target.value)}
-                          maxLength={15}
-                          className="flex-1 bg-slate-100 border border-slate-300 rounded-lg px-4 py-3 font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Nome da Equipe"
-                        />
-                        {teams.length > 2 && (
-                          <button onClick={() => handleRemoveTeam(team.id)} className="p-3 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"><Minus className="w-5 h-5" /></button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  {teams.length < 3 && (
-                    <button onClick={handleAddTeam} className="w-full mb-6 py-3 border-2 border-dashed border-blue-400 text-blue-600 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-blue-50 transition-colors">
-                      <Plus className="w-5 h-5" /> Adicionar 3ª Equipe
-                    </button>
-                  )}
-                  <button onClick={startGame} disabled={teams.some(t => t.name.trim() === '')} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed text-white font-black py-4 px-6 rounded-xl transition-all uppercase tracking-wider text-lg shadow-lg">
-                    Começar Jogo
-                  </button>
-                </div>
-              </div>
-            );
-          }
-
-          if (gameState === 'finished') {
-            const sortedTeams = [...teams].sort((a, b) => b.score - a.score);
-            const winner = sortedTeams[0];
-            const isTie = sortedTeams.length > 1 && sortedTeams[0].score === sortedTeams[1].score;
-
-            return (
-              <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans">
-                <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full text-center">
-                  <Trophy className="w-24 h-24 text-yellow-500 mx-auto mb-4" />
-                  <h1 className="text-3xl font-black text-slate-800 mb-2 uppercase">Fim de Jogo!</h1>
-                  {isTie ? <p className="text-xl font-bold text-blue-600 mb-6">Tivemos um empate!</p> : <p className="text-xl font-bold text-green-600 mb-6">Vitória da {winner.name}!</p>}
-                  <div className="space-y-3 mb-8">
-                    {sortedTeams.map((team, index) => (
-                      <div key={team.id} className={`flex items-center justify-between p-4 rounded-xl border-2 ${index === 0 && !isTie ? 'border-yellow-400 bg-yellow-50' : 'border-slate-200 bg-slate-50'}`}>
-                        <div className="flex items-center gap-3">
-                          <span className={`font-black text-xl ${index === 0 && !isTie ? 'text-yellow-600' : 'text-slate-400'}`}>{index + 1}º</span>
-                          <span className="font-bold text-lg text-slate-700">{team.name}</span>
-                        </div>
-                        <div className="flex gap-4 text-sm font-bold">
-                          <span className="text-green-600">{team.score} Acertos</span>
-                          <span className="text-red-500">{team.errors} Erros</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex gap-4">
-                    <button onClick={startGame} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-xl transition-all flex items-center justify-center gap-2">
-                      <RotateCcw className="w-5 h-5" /> Revanche
-                    </button>
-                    <button onClick={backToSetup} className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-4 px-4 rounded-xl transition-all">
-                      Mudar Equipes
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          }
-
-          const activeTeam = teams[currentTeamIndex];
-
-          return (
-            <div className="min-h-screen bg-slate-100 flex flex-col font-sans select-none">
-              
-              <header className="bg-slate-900 text-white p-4 shadow-md z-10 border-b-4 border-slate-800">
-                <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-6">
-                  <div className="text-center lg:text-left">
-                    <h1 className="text-2xl font-black uppercase tracking-wider">De Quem é a Competência?</h1>
-                    <p className="text-slate-400 text-sm">Direito Constitucional - CF/88</p>
-                  </div>
-                  <div className="flex flex-wrap justify-center gap-3 w-full lg:w-auto">
-                    {teams.map((team, index) => {
-                      const isActive = index === currentTeamIndex;
-                      return (
-                        <div key={team.id} className={`flex flex-col px-4 py-2 rounded-lg border-2 transition-all min-w-[140px] ${isActive ? 'bg-blue-900/80 border-blue-400 scale-105 shadow-lg shadow-blue-500/20' : 'bg-slate-800 border-slate-700 opacity-70'}`}>
-                          <div className="flex justify-between items-center mb-1">
-                            <span className={`text-xs font-black uppercase tracking-wider ${isActive ? 'text-blue-300' : 'text-slate-400'}`}>{team.name}</span>
-                            {isActive && <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />}
-                          </div>
-                          <div className="flex justify-between text-sm font-bold">
-                            <span className="text-green-400 flex items-center gap-1">{team.score} <CheckCircle className="w-3 h-3"/></span>
-                            <span className="text-red-400 flex items-center gap-1">{team.errors} <XCircle className="w-3 h-3"/></span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </header>
-
-              <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start relative">
-                
-                <div className="lg:col-span-4 flex flex-col gap-6 items-center w-full">
-                  <div className={`w-full py-3 px-4 rounded-xl text-center font-black uppercase tracking-wider shadow-sm transition-colors ${status === 'idle' ? 'bg-blue-600 text-white' : 'bg-slate-300 text-slate-500'}`}>
-                    Vez da: {activeTeam.name}
-                  </div>
-
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 w-full text-center">
-                    <button
-                      onClick={drawCard}
-                      disabled={!!activeCard || status !== 'idle'}
-                      className={`w-full relative group p-8 rounded-xl border-4 border-dashed transition-all flex flex-col items-center gap-4
-                        ${(!activeCard && status === 'idle') 
-                          ? 'border-blue-400 bg-blue-50 hover:bg-blue-100 cursor-pointer text-blue-700 shadow-inner' 
-                          : 'border-slate-300 bg-slate-100 text-slate-400 cursor-not-allowed'}`}
-                    >
-                      <Package className={`w-16 h-16 ${(!activeCard && status === 'idle') ? 'animate-bounce' : ''}`} />
-                      <span className="font-bold text-lg uppercase tracking-wide">
-                        {pool.length > 0 ? "Sortear Competência" : "Fim dos Casos"}
-                      </span>
-                      <span className="text-sm opacity-80 font-medium">Restam {pool.length} casos no fundo</span>
-                    </button>
-                  </div>
-
-                  <div className="h-64 w-full flex items-center justify-center">
-                    {activeCard && (
-                      <div 
-                        draggable={status === 'idle'}
-                        onDragStart={handleDragStart}
-                        className={`w-full max-w-sm bg-yellow-50 p-6 rounded-xl shadow-lg border-2 border-yellow-300 cursor-grab active:cursor-grabbing transform transition-all duration-500 flex flex-col gap-4 items-center text-center
-                          ${status === 'correct' ? 'scale-0 opacity-0 bg-green-100 border-green-400' : ''}
-                          ${status === 'wrong' ? 'translate-x-[200px] lg:translate-x-[400px] scale-50 opacity-0 rotate-12 bg-red-100 border-red-400' : 'scale-100 opacity-100'}
-                        `}
-                      >
-                        <div className="text-xs font-black text-yellow-600/80 uppercase tracking-widest mb-2 border-b-2 border-yellow-200/50 w-full pb-2">Atribuição</div>
-                        <p className="text-lg sm:text-xl font-bold text-slate-800 leading-snug">"{activeCard.texto}"</p>
-                        <div className="mt-auto pt-4 text-xs text-slate-500 font-bold flex flex-col items-center gap-1 uppercase tracking-wide">
-                          <span className="text-blue-600">{activeTeam.name}</span>
-                          <span>Arraste ou Clique no Balde</span>
-                        </div>
-                      </div>
-                    )}
-                    {!activeCard && status === 'idle' && (
-                      <div className="text-slate-400 font-medium border-2 border-dashed border-slate-300 p-8 rounded-xl w-full text-center">
-                        Aperte a caixa para sortear a vez da <br/><span className="text-blue-600 font-bold uppercase">{activeTeam.name}</span>.
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4 lg:gap-6">
-                  {['União', 'Estado', 'Município'].map((esfera) => {
-                    const themes = {
-                      União: { base: 'bg-blue-100 border-blue-300', over: 'bg-blue-200 border-blue-500', icon: 'bg-blue-600', text: 'text-blue-900', letter: 'U' },
-                      Estado: { base: 'bg-orange-100 border-orange-300', over: 'bg-orange-200 border-orange-500', icon: 'bg-orange-500', text: 'text-orange-900', letter: 'E' },
-                      Município: { base: 'bg-purple-100 border-purple-300', over: 'bg-purple-200 border-purple-500', icon: 'bg-purple-600', text: 'text-purple-900', letter: 'M' }
-                    };
-                    const theme = themes[esfera];
-                    const isOver = draggedOver === esfera;
-
-                    return (
-                      <button 
-                        key={esfera}
-                        onClick={() => handleGuess(esfera)}
-                        onDragOver={(e) => handleDragOver(e, esfera)}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, esfera)}
-                        className={`flex flex-col items-center justify-center p-6 rounded-2xl border-4 transition-all w-full
-                          ${activeCard ? 'cursor-pointer hover:scale-105 hover:shadow-lg' : 'opacity-70 cursor-default'}
-                          ${isOver ? `${theme.over} scale-105 shadow-xl` : theme.base}
-                        `}
-                      >
-                        <div className={`w-16 h-16 ${theme.icon} rounded-full flex items-center justify-center mb-3 shadow-inner`}>
-                          <span className="text-white font-black text-2xl">{theme.letter}</span>
-                        </div>
-                        <h2 className={`text-xl font-black ${theme.text} uppercase`}>{esfera}</h2>
-                      </button>
-                    )
-                  })}
-                </div>
-
-                <div className="lg:col-span-3 flex flex-col justify-center h-full relative">
-                  <div className={`p-8 rounded-2xl border-4 flex flex-col items-center text-center transition-all duration-300 z-10 relative
-                    ${status === 'wrong' ? 'bg-red-200 border-red-600 scale-105 shadow-2xl' : 'bg-slate-200 border-slate-300'}
-                  `}>
-                    <Trash2 className={`w-20 h-20 mb-4 transition-all duration-300 ${status === 'wrong' ? 'text-red-600 animate-bounce' : 'text-slate-400'}`} />
-                    <h2 className={`text-2xl font-black uppercase mb-2 ${status === 'wrong' ? 'text-red-700' : 'text-slate-500'}`}>Lixo do Erro</h2>
-                    <p className="text-sm font-medium text-slate-500 mt-2">Erros da equipe caem direto aqui.</p>
-                  </div>
-                </div>
-
-              </main>
-
-              {feedback && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
-                  <div className={`bg-white border-8 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl flex flex-col items-center text-center transform transition-all duration-300 scale-100
-                    ${feedback.type === 'correct' ? 'border-green-500' : 'border-red-500'}
-                  `}>
-                    
-                    {feedback.type === 'correct' ? (
-                       <CheckCircle className="w-20 h-20 text-green-500 mb-4" />
-                    ) : (
-                       <XCircle className="w-20 h-20 text-red-500 mb-4" />
-                    )}
-                    
-                    <h2 className={`text-3xl font-black uppercase mb-2 tracking-wide ${feedback.type === 'correct' ? 'text-green-600' : 'text-red-600'}`}>
-                      {feedback.type === 'correct' ? 'Acertou!' : 'Ops, Errou!'}
-                    </h2>
-
-                    <div className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
-                      <p className="text-slate-700 font-medium italic">"{feedback.card.texto}"</p>
-                    </div>
-
-                    <div className="flex flex-col gap-1 w-full bg-slate-100 rounded-xl p-4 mb-4 border border-slate-200">
-                      <span className="text-sm font-bold text-slate-500 uppercase">A Competência é:</span>
-                      <span className={`text-2xl font-black uppercase tracking-wider
-                         ${feedback.card.resposta === 'União' ? 'text-blue-600' : feedback.card.resposta === 'Estado' ? 'text-orange-600' : 'text-purple-600'}
-                      `}>
-                        {feedback.card.resposta}
-                      </span>
-                    </div>
-
-                    <div className="w-full bg-yellow-100 border-2 border-yellow-300 rounded-xl p-4 mb-8 relative shadow-inner">
-                      <BookOpen className="w-8 h-8 text-yellow-500 absolute -top-4 left-1/2 -translate-x-1/2 bg-yellow-100 rounded-full p-1 border-2 border-yellow-300" />
-                      <span className="text-xs font-black text-yellow-700 uppercase tracking-widest block mb-2 mt-2">Fundamento Legal</span>
-                      <span className="text-xl font-black text-yellow-900">
-                        {feedback.card.fundamento}
-                      </span>
-                    </div>
-
-                    <button 
-                      onClick={handleNextTurn}
-                      className={`w-full text-white font-black py-4 px-6 rounded-xl transition-all uppercase tracking-wider text-lg shadow-lg flex items-center justify-center gap-2 hover:scale-105 active:scale-95
-                        ${feedback.type === 'correct' ? 'bg-green-600 hover:bg-green-700 shadow-green-600/30' : 'bg-red-600 hover:bg-red-700 shadow-red-600/30'}
-                      `}
-                    >
-                      Próxima Rodada <ArrowRight className="w-6 h-6" />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-            </div>
-          );
+        // Geração do array de perguntas bruto
+        const RAW_QUESTIONS = [];
+        for (let i = 0; i < 50; i++) {
+            RAW_QUESTIONS.push({ term: ROMAN[i][0], text: ROMAN[i][1], answer: "Romano" });
+            RAW_QUESTIONS.push({ term: GREEK[i][0], text: GREEK[i][1], answer: "Grego" });
+            RAW_QUESTIONS.push({ term: EGYPT[i][0], text: EGYPT[i][1], answer: "Egípcio" });
+            RAW_QUESTIONS.push({ term: MESO[i][0], text: MESO[i][1], answer: "Mesopotâmico" });
         }
 
-        // --- RENDERIZAÇÃO ---
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        // Embaralhamento seguro
+        const shuffleArray = (array) => {
+            const newArr = [...array];
+            for (let i = newArr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+            }
+            return newArr;
+        };
+
+        const FLAGS = {
+            'Romano': '🇮🇹',
+            'Grego': '🇬🇷',
+            'Egípcio': '🇪🇬',
+            'Mesopotâmico': '🇮🇶'
+        };
+
+        // ==========================================
+        // ESTADO GLOBAL DO JOGO (STATE)
+        // ==========================================
+        let gameState = 'setup'; // 'setup', 'playing', 'gameover'
+        let numPlayersInput = 2;
+        let playerNames = ['Jogador 1', 'Jogador 2'];
+        let players = [];
+        let questionsMap = {};
+        let availableNumbers = [];
+        let currentPlayerIndex = 0;
+        let showPapyrusInput = false;
+        let numberInputVal = '';
+        let currentQuestion = null;
+        let feedback = null;
+
+        // ==========================================
+        // FUNÇÕES DE LÓGICA E INTERATIVIDADE
+        // ==========================================
+
+        // Sincroniza o array de nomes com os inputs em tempo real
+        function savePlayerNamesFromDOM() {
+            for (let i = 0; i < numPlayersInput; i++) {
+                const input = document.getElementById(`name-${i}`);
+                if (input) playerNames[i] = input.value;
+            }
+        }
+
+        function handleNumPlayersChange(val) {
+            savePlayerNamesFromDOM(); // Salva antes de recriar
+
+            let parsedVal = parseInt(val);
+            if (isNaN(parsedVal) || parsedVal < 1) parsedVal = 1;
+            if (parsedVal > 15) parsedVal = 15;
+            numPlayersInput = parsedVal;
+
+            while (playerNames.length < numPlayersInput) {
+                playerNames.push(`Jogador ${playerNames.length + 1}`);
+            }
+            playerNames = playerNames.slice(0, numPlayersInput);
+            render();
+        }
+
+        function startGame() {
+            savePlayerNamesFromDOM();
+
+            players = playerNames.map((name, i) => ({
+                id: i,
+                name: name || `Jogador ${i + 1}`,
+                isOut: false
+            }));
+            currentPlayerIndex = 0;
+
+            const shuffled = shuffleArray(RAW_QUESTIONS);
+            questionsMap = {};
+            availableNumbers = [];
+            
+            shuffled.forEach((q, idx) => {
+                const questionId = idx + 1;
+                questionsMap[questionId] = { ...q, id: questionId };
+                availableNumbers.push(questionId);
+            });
+            
+            gameState = 'playing';
+            render();
+        }
+
+        function handlePapyrusClick() {
+            if (feedback || currentQuestion) return;
+            showPapyrusInput = true;
+            numberInputVal = '';
+            render();
+            // Focar automaticamente no input
+            setTimeout(() => {
+                const numInput = document.getElementById('papyrusNumber');
+                if(numInput) numInput.focus();
+            }, 50);
+        }
+
+        function closePapyrusModal() {
+            showPapyrusInput = false;
+            render();
+        }
+
+        function submitNumber(e) {
+            e.preventDefault();
+            const inputEl = document.getElementById('papyrusNumber');
+            const num = parseInt(inputEl.value);
+            
+            if (isNaN(num) || num < 1 || num > 200) {
+                alert("Por favor, digite um número entre 1 e 200.");
+                return;
+            }
+            
+            if (!availableNumbers.includes(num)) {
+                alert("Este pergaminho já foi lido ou não existe! Tente outro número.");
+                inputEl.value = '';
+                return;
+            }
+
+            // Aceitou
+            showPapyrusInput = false;
+            availableNumbers = availableNumbers.filter(n => n !== num);
+            currentQuestion = questionsMap[num];
+            render();
+        }
+
+        function answerQuestion(answerOption) {
+            if (feedback) return; // Previne múltiplos cliques
+            
+            const isCorrect = answerOption === currentQuestion.answer;
+            const currentActivePlayers = players.filter(p => !p.isOut);
+            const currentPlayer = players[currentPlayerIndex];
+            
+            if (isCorrect) {
+                if (currentActivePlayers.length === 1 && players.length > 1) {
+                    feedback = { status: 'correct', correctA: currentQuestion.answer, isVictory: true };
+                } else {
+                    feedback = { status: 'correct', correctA: currentQuestion.answer };
+                }
+            } else {
+                const activeAfterThis = currentActivePlayers.filter(p => p.id !== currentPlayer.id);
+                const isTie = activeAfterThis.length === 0;
+
+                feedback = { status: 'wrong', correctA: currentQuestion.answer, isTie: isTie };
+
+                players = players.map((p, i) => 
+                    i === currentPlayerIndex ? { ...p, isOut: true } : p
+                );
+            }
+            render();
+        }
+
+        function nextTurn() {
+            if (feedback.isVictory) {
+                gameState = 'gameover';
+                feedback = null;
+                currentQuestion = null;
+                render();
+                return;
+            }
+
+            if (feedback.isTie) {
+                players = players.map(p => ({...p, isOut: false}));
+                currentPlayerIndex = 0;
+                feedback = null;
+                currentQuestion = null;
+                render();
+                return;
+            }
+
+            // Próximo Jogador
+            let nextIdx = (currentPlayerIndex + 1) % players.length;
+            while (players[nextIdx].isOut) {
+                nextIdx = (nextIdx + 1) % players.length;
+            }
+            
+            currentPlayerIndex = nextIdx;
+            feedback = null;
+            currentQuestion = null;
+
+            if (availableNumbers.length === 0) {
+                gameState = 'gameover';
+            }
+            render();
+        }
+
+        function restartGame() {
+            gameState = 'setup';
+            currentQuestion = null;
+            feedback = null;
+            render();
+        }
+
+        // ==========================================
+        // RENDERIZAÇÃO (HTML INJECTION)
+        // ==========================================
+
+        function render() {
+            const root = document.getElementById('root');
+            
+            if (gameState === 'setup') {
+                root.innerHTML = renderSetup();
+            } else if (gameState === 'playing') {
+                root.innerHTML = renderPlaying();
+            } else if (gameState === 'gameover') {
+                root.innerHTML = renderGameOver();
+            }
+
+            // Inicializa os ícones do Lucide após recarregar o HTML
+            lucide.createIcons();
+        }
+
+        function renderSetup() {
+            let inputsHTML = '';
+            for (let i = 0; i < numPlayersInput; i++) {
+                inputsHTML += `
+                    <div class="flex items-center space-x-3">
+                        <span class="text-amber-600 font-bold w-6">${i + 1}.</span>
+                        <input 
+                            id="name-${i}"
+                            type="text" 
+                            value="${playerNames[i] || ''}"
+                            placeholder="Nome do Jogador ${i + 1}"
+                            class="flex-1 bg-stone-900 border border-stone-700 rounded p-2 text-stone-100 focus:outline-none focus:border-amber-500"
+                        />
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="min-h-screen bg-stone-900 flex items-center justify-center p-4 font-serif text-stone-200">
+                    <div class="bg-stone-800 border border-amber-700/50 p-8 rounded-xl shadow-2xl max-w-lg w-full">
+                        <div class="text-center mb-8">
+                            <i data-lucide="book-open" class="w-16 h-16 text-amber-500 mx-auto mb-4"></i>
+                            <h1 class="text-4xl font-bold text-amber-500 uppercase tracking-widest">Quem Criou?</h1>
+                            <p class="text-stone-400 mt-2 uppercase tracking-wide text-sm">História do Direito</p>
+                        </div>
+                        
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-amber-500 mb-2 font-semibold">Número de Jogadores (1 a 15):</label>
+                                <input 
+                                    type="number" 
+                                    min="1" max="15" 
+                                    value="${numPlayersInput}"
+                                    onchange="handleNumPlayersChange(this.value)"
+                                    class="w-full bg-stone-900 border border-amber-700 rounded p-3 text-stone-100 focus:outline-none focus:border-amber-500"
+                                />
+                            </div>
+                            
+                            <div class="max-h-64 overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-amber-700">
+                                ${inputsHTML}
+                            </div>
+
+                            <button 
+                                onclick="startGame()"
+                                class="w-full bg-amber-700 hover:bg-amber-600 text-white font-bold py-4 rounded-lg shadow-lg transition duration-200 flex items-center justify-center space-x-2 text-lg"
+                            >
+                                <i data-lucide="play" class="w-5 h-5"></i>
+                                <span>INICIAR DESAFIO HISTÓRICO</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderPlaying() {
+            const activePlayers = players.filter(p => !p.isOut);
+            const eliminatedPlayers = players.filter(p => p.isOut);
+            const currentPlayer = players[currentPlayerIndex];
+
+            // Mural Html
+            let activeListHTML = activePlayers.map(p => `
+                <li class="flex items-center space-x-2 p-2 rounded transition-colors ${p.id === currentPlayer.id ? 'bg-amber-900/40 border border-amber-700' : 'bg-stone-800'}">
+                    ${p.id === currentPlayer.id 
+                        ? '<i data-lucide="crown" class="w-4 h-4 text-yellow-500 shrink-0"></i>' 
+                        : '<div class="w-4 h-4 rounded-full bg-green-600/50 shrink-0"></div>'
+                    }
+                    <span class="truncate ${p.id === currentPlayer.id ? 'font-bold text-amber-300' : 'text-stone-300'}">${p.name}</span>
+                </li>
+            `).join('');
+
+            let eliminatedListHTML = '';
+            if (eliminatedPlayers.length > 0) {
+                eliminatedListHTML = `
+                    <div class="pt-4 border-t border-stone-700">
+                        <h3 class="text-xs text-stone-500 uppercase tracking-widest mb-2 font-bold">Eliminados</h3>
+                        <ul class="space-y-2">
+                            ${eliminatedPlayers.map(p => `
+                                <li class="flex items-center space-x-2 p-2 opacity-50">
+                                    <i data-lucide="skull" class="w-4 h-4 text-stone-500 shrink-0"></i>
+                                    <span class="line-through text-stone-400 truncate">${p.name}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            // Área Principal
+            let mainContentHTML = '';
+            
+            if (!currentQuestion) {
+                // Modo Papiro Fechado
+                mainContentHTML = `
+                    <div class="flex flex-col items-center">
+                        <button onclick="handlePapyrusClick()" class="relative group cursor-pointer transition-transform transform hover:scale-105">
+                            <div class="w-64 h-80 md:w-80 md:h-96 bg-[#e8d5a5] rounded shadow-2xl border-x-4 border-[#b5925a] flex items-center justify-center relative overflow-hidden">
+                                <div class="absolute inset-0 bg-gradient-to-b from-[#d4bb83] via-transparent to-[#d4bb83] opacity-30 pointer-events-none"></div>
+                                <div class="absolute top-0 w-full h-4 bg-[#8b5a2b] shadow-md"></div>
+                                <div class="absolute bottom-0 w-full h-4 bg-[#8b5a2b] shadow-md"></div>
+                                
+                                <div class="text-center text-[#5c3e1e] p-4 md:p-6">
+                                    <i data-lucide="scroll" class="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 opacity-80"></i>
+                                    <h3 class="text-xl md:text-2xl font-bold uppercase tracking-widest mb-2">Papiro do Conhecimento</h3>
+                                    <p class="text-xs md:text-sm font-semibold opacity-70 group-hover:opacity-100 transition-opacity">
+                                        Clique para retirar um documento da biblioteca
+                                    </p>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                `;
+
+                // Modal de Input de Numero
+                if (showPapyrusInput) {
+                    mainContentHTML += `
+                        <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in">
+                            <form onsubmit="submitNumber(event)" class="bg-stone-800 p-8 rounded-xl border border-amber-600 shadow-2xl w-full max-w-sm text-center animate-zoom-in">
+                                <h3 class="text-2xl text-amber-500 font-bold mb-4">Escolha um Pergaminho</h3>
+                                <p class="text-stone-400 text-sm mb-6">Digite um número de 1 a 200</p>
+                                <input 
+                                    id="papyrusNumber"
+                                    type="number" 
+                                    min="1" max="200"
+                                    class="w-full text-center text-3xl p-4 bg-stone-900 border-2 border-amber-700 rounded-lg text-amber-200 focus:outline-none focus:border-amber-400 mb-6"
+                                />
+                                <div class="flex space-x-4">
+                                    <button type="button" onclick="closePapyrusModal()" class="flex-1 py-3 bg-stone-700 text-white rounded hover:bg-stone-600 transition">Cancelar</button>
+                                    <button type="submit" class="flex-1 py-3 bg-amber-600 text-white font-bold rounded hover:bg-amber-500 transition">Revelar</button>
+                                </div>
+                            </form>
+                        </div>
+                    `;
+                }
+            } else {
+                // Modo Papiro Aberto (Pergunta)
+                let optionsHTML = ['Romano', 'Grego', 'Egípcio', 'Mesopotâmico'].map(opt => {
+                    let btnClass = 'bg-[#8b5a2b] text-[#e8d5a5] border-[#5c3e1e] hover:bg-[#6e4620] hover:scale-105 shadow-md';
+                    if (feedback) {
+                        if (opt === currentQuestion.answer) {
+                            btnClass = 'bg-green-600 text-white border-green-800 shadow-lg scale-105';
+                        } else if (feedback.status === 'wrong' && opt !== currentQuestion.answer) {
+                            btnClass = 'bg-[#d0b894] text-[#8b5a2b] border-[#cdae78] opacity-50 cursor-not-allowed';
+                        } else {
+                            btnClass = 'bg-[#d0b894] text-[#8b5a2b] border-[#cdae78] cursor-not-allowed';
+                        }
+                    }
+                    return `<button onclick="answerQuestion('${opt}')" ${feedback ? 'disabled' : ''} class="p-4 md:p-5 text-xl font-bold rounded-lg border-2 transition-all duration-300 ${btnClass}">Direito ${opt}</button>`;
+                }).join('');
+
+                mainContentHTML = `
+                    <div class="w-full bg-[#e8d5a5] text-[#3e2723] p-6 md:p-12 rounded shadow-[0_0_50px_rgba(180,110,30,0.15)] border-x-8 border-[#cdae78] relative">
+                        <div class="absolute top-0 left-0 w-full h-3 bg-[#8b5a2b]"></div>
+                        <div class="absolute bottom-0 left-0 w-full h-3 bg-[#8b5a2b]"></div>
+                        
+                        <div class="text-center mb-10">
+                            <span class="text-[#8b5a2b] text-sm font-bold uppercase tracking-widest">Pergaminho Nº ${currentQuestion.id}</span>
+                            
+                            <div class="max-h-[40vh] md:max-h-[45vh] overflow-y-auto px-2 mt-4 mb-2 scrollbar-thin scrollbar-thumb-[#8b5a2b] scrollbar-track-transparent">
+                                <h3 class="text-lg md:text-xl font-bold leading-relaxed font-serif text-[#4e342e] break-words">
+                                    "${currentQuestion.text}"
+                                </h3>
+                            </div>
+                            
+                            <p class="mt-4 text-[#8b5a2b] font-bold text-base md:text-lg italic uppercase">De onde vem?</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            ${optionsHTML}
+                        </div>
+                    </div>
+                `;
+
+                // Modal de Feedback
+                if (feedback) {
+                    let feedbackInnerHTML = '';
+                    if (feedback.status === 'correct') {
+                        feedbackInnerHTML = `
+                            <div class="flex justify-center items-center space-x-3 mb-2">
+                                <i data-lucide="check-circle" class="w-10 h-10 text-green-600"></i>
+                                <h4 class="text-4xl md:text-5xl font-black text-green-700 uppercase tracking-widest">CORRETO!</h4>
+                            </div>
+                            <p class="text-xl text-[#8b5a2b] font-semibold mt-6">A invenção correta era:</p>
+                            <p class="text-3xl md:text-4xl text-[#3e2723] font-bold mb-2 uppercase">${currentQuestion.term}</p>
+                            <p class="text-lg text-[#8b5a2b] font-bold mb-6">(Direito ${feedback.correctA})</p>
+                            <div class="bg-green-100 border border-green-400 p-4 rounded-lg">
+                                <p class="text-xl text-green-900 font-bold">
+                                    ${feedback.isVictory ? `🏆 ${currentPlayer.name} é o grande campeão!` : `Muito bem, ${currentPlayer.name}! Você sobreviveu.`}
+                                </p>
+                            </div>
+                        `;
+                    } else {
+                        feedbackInnerHTML = `
+                            <div class="flex justify-center items-center space-x-3 mb-2">
+                                <i data-lucide="x-circle" class="w-10 h-10 text-red-600"></i>
+                                <h4 class="text-4xl md:text-5xl font-black text-red-700 uppercase tracking-widest">ERRADO!</h4>
+                            </div>
+                            <p class="text-xl text-[#8b5a2b] font-semibold mt-6">A invenção correta era:</p>
+                            <p class="text-3xl md:text-4xl text-[#3e2723] font-bold mb-2 uppercase">${currentQuestion.term}</p>
+                            <p class="text-lg text-[#8b5a2b] font-bold mb-6">(Direito ${feedback.correctA})</p>
+                            ${feedback.isTie 
+                                ? `<div class="px-4 py-4 bg-red-200 border-2 border-red-500 rounded-lg shadow-inner"><p class="text-lg text-red-900 font-bold leading-tight uppercase">Ninguém sobreviveu! ⚔️<br/><br/>TEMOS UM EMPATE!<br/>Todos ganham uma nova chance!</p></div>`
+                                : `<div class="bg-red-100 border border-red-400 p-4 rounded-lg"><p class="text-xl text-red-900 font-bold">${currentPlayer.name} foi eliminado das areias do tempo!</p></div>`
+                            }
+                        `;
+                    }
+
+                    mainContentHTML += `
+                        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto">
+                            <div class="bg-[#e8d5a5] border-8 border-[#8b5a2b] p-6 md:p-12 rounded-2xl shadow-2xl text-center max-w-xl w-full animate-zoom-in my-auto">
+                                <div class="flex justify-center mb-4">
+                                    <span class="text-7xl drop-shadow-lg">${FLAGS[feedback.correctA]}</span>
+                                </div>
+                                ${feedbackInnerHTML}
+                                <button onclick="nextTurn()" class="mt-8 mx-auto flex items-center justify-center space-x-2 bg-[#8b5a2b] hover:bg-[#6e4620] text-[#e8d5a5] px-8 py-4 rounded-full font-bold text-xl transition-transform hover:scale-105 shadow-lg w-full">
+                                    <span>${feedback.isVictory ? 'Ver Resultado Final' : 'Avançar Turno'}</span>
+                                    <i data-lucide="chevron-right" class="w-6 h-6"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            return `
+                <div class="min-h-screen flex flex-col md:flex-row">
+                    <!-- MURAL SIDEBAR -->
+                    <div class="w-full md:w-72 bg-stone-800 border-b md:border-b-0 md:border-r border-amber-900 flex flex-col shadow-2xl z-10 max-h-48 md:max-h-screen overflow-hidden">
+                        <div class="p-4 bg-stone-900 border-b border-amber-900 flex items-center justify-between space-x-2 shrink-0">
+                            <div class="flex items-center space-x-2">
+                                <i data-lucide="users" class="text-amber-500"></i>
+                                <h2 class="text-xl font-bold text-amber-500 uppercase tracking-wider">O Mural</h2>
+                            </div>
+                            <span class="md:hidden text-amber-700 text-sm font-bold bg-amber-900/20 px-2 py-1 rounded">Rolagem ▸</span>
+                        </div>
+                        
+                        <div class="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-stone-600">
+                            <div>
+                                <h3 class="text-xs text-stone-500 uppercase tracking-widest mb-2 font-bold">Ainda no Jogo (${activePlayers.length})</h3>
+                                <ul class="space-y-2">
+                                    ${activeListHTML}
+                                </ul>
+                            </div>
+                            ${eliminatedListHTML}
+                        </div>
+                    </div>
+
+                    <!-- ÁREA PRINCIPAL -->
+                    <div class="flex-1 flex flex-col items-center justify-center p-6 relative h-[calc(100vh-12rem)] md:h-screen overflow-y-auto">
+                        <!-- CABEÇALHO DO TURNO -->
+                        <div class="absolute top-6 w-full text-center px-4">
+                            <p class="text-stone-400 text-sm uppercase tracking-widest mb-1">Turno de</p>
+                            <h2 class="text-3xl font-bold text-amber-400 truncate px-4">${currentPlayer.name}</h2>
+                            <p class="text-stone-500 mt-2 text-sm">${availableNumbers.length} Invenções restantes</p>
+                        </div>
+
+                        <!-- PAPIRO GIGANTE OU QUESTÃO -->
+                        <div class="mt-20 w-full max-w-3xl">
+                            ${mainContentHTML}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderGameOver() {
+            const winners = players.filter(p => !p.isOut);
+            
+            let resultHTML = '';
+            if (winners.length === 1) {
+                resultHTML = `
+                    <p class="text-xl mb-2 text-stone-300">O grande jurista supremo é:</p>
+                    <p class="text-3xl font-bold text-yellow-400 uppercase tracking-wider">${winners[0].name}</p>
+                `;
+            } else if (winners.length > 1) {
+                resultHTML = `
+                    <p class="text-xl mb-2 text-stone-300">Os pergaminhos acabaram! Houve um empate entre:</p>
+                    <div class="text-2xl font-bold text-yellow-400 space-y-2">
+                        ${winners.map(w => `<div>${w.name}</div>`).join('')}
+                    </div>
+                `;
+            } else {
+                resultHTML = `
+                    <i data-lucide="skull" class="w-16 h-16 text-stone-500 mx-auto mb-4"></i>
+                    <p class="text-xl text-stone-300">Todos foram derrotados pelas areias do tempo.</p>
+                `;
+            }
+
+            return `
+                <div class="min-h-screen bg-stone-900 flex items-center justify-center p-4 font-serif text-stone-200">
+                    <div class="bg-stone-800 border border-amber-500 p-8 rounded-xl shadow-2xl max-w-md w-full text-center animate-zoom-in">
+                        <i data-lucide="crown" class="w-20 h-20 text-yellow-500 mx-auto mb-4"></i>
+                        <h2 class="text-4xl font-bold text-amber-500 mb-6">FIM DE JOGO</h2>
+                        
+                        <div>${resultHTML}</div>
+
+                        <button 
+                            onclick="restartGame()"
+                            class="mt-10 bg-amber-700 hover:bg-amber-600 px-6 py-3 rounded text-white font-bold transition w-full"
+                        >
+                            Jogar Novamente
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==========================================
+        // INICIALIZAÇÃO
+        // ==========================================
+        render();
+
     </script>
 </body>
 </html>
